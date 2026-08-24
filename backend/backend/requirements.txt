@@ -6,5 +6,6 @@ pydantic>=2.7
 pydantic-settings
 psycopg2-binary>=2.9
 python-jose
-passlib[bcrypt]
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 python-dotenv
