@@ -14,7 +14,7 @@ from app.database import Base  # noqa
 from app import models  # noqa - registers all models on Base.metadata
 
 config = context.config
-if context.config_file_name is not None:
+if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # DATABASE_URL from .env / environment always wins over alembic.ini,
