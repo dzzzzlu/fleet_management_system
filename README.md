@@ -37,65 +37,54 @@ copy .env.example .env           # VITE_API_URL=http://localhost:8000/api
 npm run dev                      # http://localhost:5173
 ```
 
-## Deployment (Vercel frontend + Render backend + Neon Postgres)
+## Deployment (Vercel for both frontend & backend + Supabase Postgres)
 
-> Note: the course guide names Replit as the required host. Vercel/Render is only an
+> Note: the course guide names Replit as the required host. Vercel is only an
 > option if your internship supervisor approves it — confirm first.
 
-### 1. Hosted database (Neon / Supabase / Render Postgres)
+Architecture: two separate Vercel projects from this one repo.
+- **frontend** → static React build (root: `frontend/frontend/frontend`)
+- **backend** → FastAPI running as a Python serverless function (root: `backend/backend`, entrypoint `api/index.py`)
 
-Create a free Postgres instance and copy its connection string. Append `?sslmode=require` if not present. Locally set:
+### 1. Database — Supabase (free)
 
+1. Create a project at supabase.com (sign up with GitHub).
+2. **Connect → ORM → SQLAlchemy** and copy the connection string.
+3. Use the **pooler** host (`*.pooler.supabase.com`), not `db.*.supabase.co` (IPv6-only on free tier). For serverless, port **6543** (transaction mode) avoids connection exhaustion; port **5432** (session) also works at small scale.
+4. Final format:
 ```
-DATABASE_URL=postgresql+psycopg2://user:pass@host/db?sslmode=require
+postgresql+psycopg2://postgres.PROJECT-REF:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres?sslmode=require
 ```
 
-Run migrations against it once from `backend/backend`: `alembic upgrade head`.
+### 2. Backend on Vercel
 
-### 2. Backend → Render (free web service)
+1. Vercel → **Add New → Project** → import this repo again (a second project).
+2. **Root Directory:** `backend/backend`, Framework Preset: **Other**.
+3. Environment variables:
+   - `DATABASE_URL` = Supabase string from step 1
+   - `JWT_SECRET_KEY` = long random string
+   - `CORS_ORIGINS` = `http://localhost:5173,https://YOUR-FRONTEND.vercel.app`
+4. Deploy, then verify `https://YOUR-BACKEND.vercel.app/api/health`.
 
-- New → Web Service → connect the GitLab repo.
-- Root directory: `backend/backend`
-- Build command: `pip install -r requirements.txt`
-- Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Environment variables:
-  - `DATABASE_URL` = hosted Postgres URL (from step 1)
-  - `JWT_SECRET_KEY` = long random string (`openssl rand -hex 32`)
-  - `CORS_ORIGINS` = `http://localhost:5173,https://YOUR-FRONTEND.vercel.app`
-- Deploy, then hit `https://YOUR-BACKEND.onrender.com/api/health` to verify.
+Note: serverless functions have cold starts (1–3 s typical); the UI shows a friendly message when the first request wakes it up.
 
-Free-tier note: the service sleeps after ~15 min idle; first request takes 10–30 s.
-The UI already shows a "server waking up" message on network errors.
+### 3. Run migrations + seed against Supabase (from your PC, once)
 
-### 3. Frontend → Vercel
-
-- Import the GitLab repo. **Root directory:** `frontend/frontend/frontend`
-- Framework preset: Vite (build `npm run build`, output `dist`).
-- Environment variable: `VITE_API_URL = https://YOUR-BACKEND.onrender.com/api`
-- Deploy. The included `vercel.json` rewrites all routes to `index.html` so deep links work.
-- After you know the final `*.vercel.app` URL, add it to the backend's `CORS_ORIGINS` and redeploy the backend.
-
-### 4. Demo accounts for the presentation
-
-Once deployed (so they live in the hosted database), create the five fictional demo users either via the admin UI (**Settings → User Management**, administrator only) or by running the idempotent seed script against the hosted DB:
+Temporarily set `DATABASE_URL` in `backend/backend/.env` to the Supabase string, then:
 
 ```bash
-cd backend/backend
-# point DATABASE_URL at the hosted database first
-python seed_demo_users.py
+alembic upgrade head          # create tables
+python seed_demo_users.py     # create the 5 demo accounts (idempotent)
 ```
 
-| Email | Role | Name |
-|---|---|---|
-| admin@demofleet.test | Administrator | Rafael Cruz |
-| manager@demofleet.test | Manager | Liza Domingo |
-| staff@demofleet.test | Staff | Marco Villanueva |
-| viewer@demofleet.test | Viewer | Anna Reyes |
-| driver@demofleet.test | Driver | Ben Santos |
+Revert `.env` to your local database afterward.
 
-Password for all: `Demo(users)2026....`
+### 4. Frontend on Vercel
 
-The driver account is auto-linked to a fleet driver record so its self-scoped views (own trips/maintenance/incidents) resolve correctly.
+1. Import repo as another project. **Root Directory:** `frontend/frontend/frontend`, preset **Vite**.
+2. Env var: `VITE_API_URL = https://YOUR-BACKEND.vercel.app/api` (note the `/api` suffix).
+3. Deploy; the bundled `vercel.json` rewrites deep links to `index.html`.
+4. Make sure both Vercel domains appear in the backend project's `CORS_ORIGINS`, then redeploy the backend.
 
 ### 5. Secrets policy
 
