@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import get_current_org_id, get_current_user_id, require_permission, driver_record_for_user
+from app.deps import get_current_org_id, get_current_user_id, get_current_user, require_permission, require_any_permission, driver_record_for_user, driver_assigned_vehicle_ids
 from app.models.incident import Incident
 from app.schemas.incident import IncidentCreate, IncidentUpdate, IncidentOut
 
@@ -38,13 +38,32 @@ def create_incident(
     db: Session = Depends(get_db),
     org_id: uuid.UUID = Depends(get_current_org_id),
     user_id: uuid.UUID = Depends(get_current_user_id),
-    _perm: object = Depends(require_permission("fleet.trip.create")),
+    user=Depends(get_current_user),
+    _perm: object = Depends(require_any_permission("fleet.trip.create", "fleet.trip.view")),
 ):
+    # --- driver role: only report incidents on their own vehicle; force driver_id ---
+    if user.role == "driver":
+        my_driver = driver_record_for_user(db, user)
+        if my_driver is None:
+            raise HTTPException(403, "No driver profile linked to your account")
+        my_vehicle_ids = driver_assigned_vehicle_ids(db, my_driver.id)
+        if not my_vehicle_ids:
+            raise HTTPException(409, "No vehicle is currently assigned to you")
+        if payload.vehicle_id not in my_vehicle_ids:
+            raise HTTPException(403, "You may only report incidents on a vehicle assigned to you")
+        if payload.driver_id and payload.driver_id != my_driver.id:
+            raise HTTPException(403, "You may only report incidents as yourself")
+        payload_dict = payload.model_dump()
+        payload_dict["driver_id"] = my_driver.id
+    else:
+        payload_dict = payload.model_dump()
+
     incident = Incident(
         organization_id=org_id,
         created_by=user_id,
         updated_by=user_id,
-        **payload.model_dump(),
+        reported_by=user_id,
+        **payload_dict,
     )
     db.add(incident)
     db.commit()

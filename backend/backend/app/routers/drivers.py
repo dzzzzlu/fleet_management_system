@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import get_current_org_id, get_current_user_id, require_permission
+from app.deps import get_current_org_id, get_current_user_id, get_current_user, require_permission, driver_record_for_user
 from app.models.driver import Driver
 from app.schemas.driver import DriverCreate, DriverUpdate, DriverOut
 
@@ -13,13 +13,16 @@ router = APIRouter(prefix="/api/drivers", tags=["drivers"])
 
 @router.get("", response_model=list[DriverOut])
 def list_drivers(db: Session = Depends(get_db), org_id: uuid.UUID = Depends(get_current_org_id),
+    user=Depends(get_current_user),
     _perm: object = Depends(require_permission("fleet.driver.view"))):
-    return (
-        db.query(Driver)
-        .filter(Driver.organization_id == org_id, Driver.deleted_at.is_(None))
-        .order_by(Driver.created_at.desc())
-        .all()
-    )
+    q = db.query(Driver).filter(Driver.organization_id == org_id, Driver.deleted_at.is_(None))
+    # --- role='driver' sees ONLY their own driver record ---
+    driver = driver_record_for_user(db, user)
+    if user.role == "driver":
+        if driver is None:
+            return []
+        q = q.filter(Driver.id == driver.id)
+    return q.order_by(Driver.created_at.desc()).all()
 
 
 @router.post("", response_model=DriverOut, status_code=201)

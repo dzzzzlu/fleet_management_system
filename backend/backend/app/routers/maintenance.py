@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import get_current_org_id, get_current_user_id, require_permission, driver_record_for_user
+from app.deps import get_current_org_id, get_current_user_id, get_current_user, require_permission, require_any_permission, driver_record_for_user, driver_assigned_vehicle_ids
 from app.models.maintenance import Maintenance
 from app.models.vehicle import Vehicle
 from app.models.vehicle_assignment import VehicleAssignment
@@ -70,8 +70,20 @@ def schedule_maintenance(
     db: Session = Depends(get_db),
     org_id: uuid.UUID = Depends(get_current_org_id),
     user_id: uuid.UUID = Depends(get_current_user_id),
-    _perm: object = Depends(require_permission("fleet.maintenance.create")),
+    user=Depends(get_current_user),
+    _perm: object = Depends(require_any_permission("fleet.maintenance.create", "fleet.maintenance.view")),
 ):
+    # --- driver role: may only schedule maintenance on a vehicle assigned to them ---
+    if user.role == "driver":
+        my_driver = driver_record_for_user(db, user)
+        if my_driver is None:
+            raise HTTPException(403, "No driver profile linked to your account")
+        my_vehicle_ids = driver_assigned_vehicle_ids(db, my_driver.id)
+        if not my_vehicle_ids:
+            raise HTTPException(409, "No vehicle is currently assigned to you")
+        if payload.vehicle_id not in my_vehicle_ids:
+            raise HTTPException(403, "You may only schedule maintenance on a vehicle assigned to you")
+
     vehicle = (
         db.query(Vehicle)
         .filter(Vehicle.id == payload.vehicle_id, Vehicle.organization_id == org_id)

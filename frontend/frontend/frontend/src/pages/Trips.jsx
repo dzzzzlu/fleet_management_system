@@ -29,7 +29,10 @@ export default function Trips() {
   const load = () => api.get("/trips").then((r) => setTrips(r.data)).catch((e) => handleLoadError(e, "Failed to load trips"));
   useEffect(() => {
     load();
-    api.get("/vehicles", { params: { status_filter: "available" } }).then((r) => setVehicles(r.data)).catch(() => {});
+    // Drivers can only create trips on the vehicle already assigned to them
+    // (which is NOT "available"), so don't apply the available filter for them.
+    const vehicleParams = user?.role === "driver" ? {} : { status_filter: "available" };
+    api.get("/vehicles", { params: vehicleParams }).then((r) => setVehicles(r.data)).catch(() => {});
     api.get("/drivers").then((r) => setDrivers(r.data)).catch(() => {});
   }, []);
 

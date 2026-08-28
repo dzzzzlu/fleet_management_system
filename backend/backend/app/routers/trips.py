@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import get_current_org_id, get_current_user_id, require_permission, driver_record_for_user
+from app.deps import get_current_org_id, get_current_user_id, get_current_user, require_permission, require_any_permission, driver_record_for_user, driver_assigned_vehicle_ids
 from app.models.trip import Trip
 from app.models.vehicle import Vehicle
 from app.models.driver import Driver
@@ -39,32 +39,55 @@ def log_trip(
     db: Session = Depends(get_db),
     org_id: uuid.UUID = Depends(get_current_org_id),
     user_id: uuid.UUID = Depends(get_current_user_id),
-    _perm: object = Depends(require_permission("fleet.trip.create")),
+    user=Depends(get_current_user),
+    _perm: object = Depends(require_any_permission("fleet.trip.create", "fleet.trip.view")),
 ):
     """
     Mirrors the Database Process Flow diagram:
     Validate -> BEGIN TRANSACTION (insert trip, update vehicle status) ->
-    create assignment record (update driver status) -> COMMIT.
-    Any failure rolls back the whole thing (no partial records / no double-booking).
+    create assignment record -> COMMIT. Any failure rolls back (no partial
+    records). A role='driver' may only log a trip for THEMSELVES on a vehicle
+    currently assigned to them (driver_id and vehicle_id are forced to their own).
     """
+    driver_id, vehicle_id = payload.driver_id, payload.vehicle_id
+
+    # --- driver role: force self-scope ---
+    if user.role == "driver":
+        my_driver = driver_record_for_user(db, user)
+        if my_driver is None:
+            raise HTTPException(403, "No driver profile linked to your account")
+        my_vehicle_ids = driver_assigned_vehicle_ids(db, my_driver.id)
+        if not my_vehicle_ids:
+            raise HTTPException(409, "No vehicle is currently assigned to you")
+        if payload.vehicle_id not in my_vehicle_ids:
+            raise HTTPException(403, "You may only log trips on a vehicle assigned to you")
+        driver_id, vehicle_id = my_driver.id, payload.vehicle_id
+
     vehicle = (
         db.query(Vehicle)
-        .filter(Vehicle.id == payload.vehicle_id, Vehicle.organization_id == org_id, Vehicle.deleted_at.is_(None))
+        .filter(Vehicle.id == vehicle_id, Vehicle.organization_id == org_id, Vehicle.deleted_at.is_(None))
         .with_for_update()
         .first()
     )
     driver = (
         db.query(Driver)
-        .filter(Driver.id == payload.driver_id, Driver.organization_id == org_id, Driver.deleted_at.is_(None))
+        .filter(Driver.id == driver_id, Driver.organization_id == org_id, Driver.deleted_at.is_(None))
         .with_for_update()
         .first()
     )
 
     # --- Validate Request: vehicle available, driver active ---
-    if not vehicle or vehicle.status != "available":
+    if not vehicle:
         raise HTTPException(409, "Vehicle is not available")
-    if not driver or driver.status != "active":
+    if not driver:
         raise HTTPException(409, "Driver is not active/available")
+    if driver.status != "active":
+        raise HTTPException(409, "Driver is not active/available")
+    # A dispatcher logs a trip on an AVAILABLE vehicle (it becomes assigned).
+    # A driver logs their own trip on a vehicle ALREADY assigned to them, so
+    # the "available" requirement is relaxed for that self-scoped case.
+    if user.role != "driver" and vehicle.status != "available":
+        raise HTTPException(409, "Vehicle is not available")
 
     try:
         # --- BEGIN TRANSACTION ---
@@ -73,7 +96,8 @@ def log_trip(
             created_by=user_id,
             updated_by=user_id,
             trip_status="scheduled",
-            **payload.model_dump(),
+            driver_id=driver_id,
+            **payload.model_dump(exclude={"driver_id"}),
         )
         db.add(trip)
         vehicle.status = "assigned"

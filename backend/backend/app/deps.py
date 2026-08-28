@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.local_stub import User
 from app.models.driver import Driver
+from app.models.vehicle_assignment import VehicleAssignment
 from app.security import decode_token
 
 bearer_scheme = HTTPBearer()
@@ -50,7 +51,13 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
         "fleet.report.view",
     },
     "driver": {
-        "fleet.trip.view", "fleet.maintenance.view", "fleet.report.view",
+        # view own vehicle/driver (routers scope this to self) and own
+        # trips/maintenance/incidents/view; create own trips & maintenance
+        # (routers force-scope to the driver's own assignment).
+        "fleet.vehicle.view", "fleet.driver.view",
+        "fleet.trip.view", "fleet.trip.create",
+        "fleet.maintenance.view", "fleet.maintenance.create",
+        "fleet.report.view",
     },
 }
 
@@ -90,6 +97,21 @@ def require_permission(permission: str):
     return checker
 
 
+def require_any_permission(*permissions: str):
+    """
+    Like require_permission but grants access if the user holds ANY of the given
+    permissions — e.g. drivers may create a trip (scoped to themselves) though
+    they only hold view-level perms. Actual write authorization for drivers is
+    re-checked per-record in the router body.
+    """
+    def checker(current_user: User = Depends(get_current_user)) -> User:
+        allowed = ROLE_PERMISSIONS.get(current_user.role, set())
+        if not any(p in allowed for p in permissions):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, f"Missing permission: {', '.join(permissions)}")
+        return current_user
+    return checker
+
+
 def driver_record_for_user(db: Session, user: User) -> Driver | None:
     """
     Resolve the fleet_drivers row belonging to a role='driver' account,
@@ -103,3 +125,18 @@ def driver_record_for_user(db: Session, user: User) -> Driver | None:
         .filter(Driver.user_id == user.id, Driver.deleted_at.is_(None))
         .first()
     )
+
+
+def driver_assigned_vehicle_ids(db: Session, driver_id: uuid.UUID) -> list[uuid.UUID]:
+    """Vehicle IDs currently actively assigned to a driver."""
+    rows = (
+        db.query(VehicleAssignment.vehicle_id)
+        .filter(
+            VehicleAssignment.driver_id == driver_id,
+            VehicleAssignment.assignment_status == "active",
+            VehicleAssignment.deleted_at.is_(None),
+        )
+        .all()
+    )
+    return [r[0] for r in rows]
+

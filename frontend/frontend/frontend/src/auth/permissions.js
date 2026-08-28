@@ -33,7 +33,12 @@ const ACTION_BY_ROLE = {
     "fleet.trip.create", "fleet.trip.update", "fleet.trip.approve",
     "fleet.maintenance.create", "fleet.maintenance.update", "fleet.maintenance.complete",
   ],
-  driver: [],
+  // Drivers create their OWN trips, maintenance requests, and incident reports
+  // (the backend force-scopes these to the driver's own assignment).
+  driver: [
+    "fleet.trip.create",
+    "fleet.maintenance.create",
+  ],
 };
 
 const ACTIONS = {

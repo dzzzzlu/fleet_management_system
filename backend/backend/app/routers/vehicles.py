@@ -3,8 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import get_current_org_id, get_current_user_id, require_permission
+from app.deps import get_current_org_id, get_current_user_id, get_current_user, require_permission, driver_record_for_user, driver_assigned_vehicle_ids
 from app.models.vehicle import Vehicle
+from app.models.vehicle_assignment import VehicleAssignment
 from app.schemas.vehicle import VehicleCreate, VehicleUpdate, VehicleOut
 
 router = APIRouter(prefix="/api/vehicles", tags=["vehicles"])
@@ -15,9 +16,19 @@ def list_vehicles(
     status_filter: str | None = None,
     db: Session = Depends(get_db),
     org_id: uuid.UUID = Depends(get_current_org_id),
+    user=Depends(get_current_user),
     _perm: object = Depends(require_permission("fleet.vehicle.view")),
 ):
     q = db.query(Vehicle).filter(Vehicle.organization_id == org_id, Vehicle.deleted_at.is_(None))
+    # --- role='driver' sees ONLY the vehicle(s) currently assigned to them ---
+    driver = driver_record_for_user(db, user)
+    if user.role == "driver":
+        if driver is None:
+            return []
+        ids = driver_assigned_vehicle_ids(db, driver.id)
+        if not ids:
+            return []
+        q = q.filter(Vehicle.id.in_(ids))
     if status_filter:
         q = q.filter(Vehicle.status == status_filter)
     return q.order_by(Vehicle.created_at.desc()).all()
