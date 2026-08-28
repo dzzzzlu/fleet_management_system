@@ -80,6 +80,10 @@ export default function Vehicles() {
   };
 
   const changeStatus = async (id, status) => {
+    if (status === "maintenance") {
+      handleError(new Error("Set a vehicle to maintenance by scheduling it from the Maintenance page."), "Maintenance is record-driven");
+      return;
+    }
     try { await api.patch(`/vehicles/${id}`, { status }); load(); }
     catch (err) { handleError(err, "Failed to update vehicle status"); }
   };
@@ -211,14 +215,17 @@ export default function Vehicles() {
                 {(canEdit || canDelete) && (
                   <td className="px-6 py-4 text-right whitespace-nowrap">
                     {canEdit && (
-                      <select value={v.status} onChange={(e) => changeStatus(v.id, e.target.value)}
-                        className="mr-1 text-xs border border-gray-200 rounded px-2 py-1 bg-white">
-                        <option value="available">Available</option>
-                        <option value="assigned">Assigned</option>
-                        <option value="maintenance">Maintenance</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="retired">Retired</option>
-                      </select>
+                      v.status === "maintenance" ? (
+                        <span className="mr-3 text-xs text-gray-400 italic">Managed in Maintenance</span>
+                      ) : (
+                        <select value={v.status} onChange={(e) => changeStatus(v.id, e.target.value)}
+                          className="mr-1 text-xs border border-gray-200 rounded px-2 py-1 bg-white">
+                          <option value="available">Available</option>
+                          <option value="assigned">Assigned</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="retired">Retired</option>
+                        </select>
+                      )
                     )}
                     {canEdit && <button onClick={() => openEdit(v)} className="text-navy-700 text-xs font-semibold hover:text-navy-900 mr-3">Edit</button>}
                     {canDelete && <button onClick={() => archive(v.id)} className="text-red-600 text-xs font-medium">Archive</button>}
