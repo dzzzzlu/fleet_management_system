@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Truck,
@@ -62,10 +62,65 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [summary, setSummary] = useState({});
+  const [notifs, setNotifs] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+
+  const unread = notifs.filter((n) => !n.is_read).length;
+
+  const loadNotifications = () => {
+    api.get("/notifications").then((r) => setNotifs(r.data.notifications || [])).catch(() => {});
+  };
 
   useEffect(() => {
     api.get("/dashboard/summary").then((r) => setSummary(r.data)).catch(() => {});
+    loadNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  // Close the dropdown when clicking outside
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  async function markOne(key) {
+    try {
+      await api.post("/notifications/read", { keys: [key] });
+      setNotifs((prev) => prev.map((n) => (n.key === key ? { ...n, is_read: true } : n)));
+    } catch { /* non-fatal */ }
+  }
+
+  async function markAll() {
+    try {
+      await api.post("/notifications/read-all");
+      setNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch { /* non-fatal */ }
+  }
+
+  function timeAgo(iso) {
+    if (!iso) return "";
+    const then = new Date(iso);
+    const diff = Date.now() - then.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  }
+
+  const CATEGORY_DOT = {
+    maintenance: "bg-amber-500",
+    incident: "bg-red-500",
+    trip: "bg-blue-500",
+    compliance: "bg-purple-500",
+    vehicle: "bg-green-500",
+  };
 
   const visibleNav = NAV.map((group) => ({
     ...group,
@@ -84,7 +139,7 @@ export default function Layout() {
       <aside className="hidden md:flex w-64 bg-navy text-white flex-col">
         <div className="p-4 flex items-center gap-2.5 border-b border-white/10">
           <LogoMark />
-          <span className="font-semibold text-sm">Metro Fleet Corp.</span>
+          <span className="font-semibold text-sm">DazAutoTrack</span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
           {visibleNav.map((group) => (
@@ -139,14 +194,54 @@ export default function Layout() {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="relative p-2.5 rounded-full hover:bg-white/10 transition-colors"
-            >
-              <Bell size={18} strokeWidth={2} aria-hidden />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" aria-hidden />
-            </button>
+            <div className="relative" ref={notifRef}>
+              <button
+                type="button"
+                aria-label="Notifications"
+                onClick={() => setNotifOpen((o) => !o)}
+                className="relative p-2.5 rounded-full hover:bg-white/10 transition-colors"
+              >
+                <Bell size={18} strokeWidth={2} aria-hidden />
+                {unread > 0 && (
+                  <span className="absolute top-1 right-1.5 min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white text-gray-800 rounded-xl shadow-2xl ring-1 ring-gray-200 z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                    <span className="font-semibold text-sm text-gray-900">Notifications</span>
+                    {unread > 0 && (
+                      <button onClick={markAll} className="text-xs text-navy-600 hover:underline">
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifs.length === 0 && (
+                      <div className="py-8 text-center text-sm text-gray-400">You're all caught up.</div>
+                    )}
+                    {notifs.map((n) => (
+                      <button
+                        key={n.key}
+                        onClick={() => markOne(n.key)}
+                        className={`w-full text-left px-4 py-3 flex gap-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${n.is_read ? "" : "bg-navy-50/40"}`}
+                      >
+                        <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${CATEGORY_DOT[n.category] || "bg-gray-300"}`} />
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium text-gray-900">{n.title}</span>
+                          <span className="block text-xs text-gray-500 mt-0.5">{n.message}</span>
+                          <span className="block text-[11px] text-gray-400 mt-1">{timeAgo(n.created_at)}</span>
+                        </span>
+                        {!n.is_read && <span className="ml-auto mt-1.5 w-2 h-2 rounded-full bg-navy-500 shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <span className="text-xs text-white/60 capitalize hidden sm:inline">{user?.role}</span>
             <div className="w-8 h-8 rounded-full bg-navy-500 flex items-center justify-center text-xs font-semibold">
               {initials}
