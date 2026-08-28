@@ -71,7 +71,7 @@ def schedule_maintenance(
     org_id: uuid.UUID = Depends(get_current_org_id),
     user_id: uuid.UUID = Depends(get_current_user_id),
     user=Depends(get_current_user),
-    _perm: object = Depends(require_any_permission("fleet.maintenance.create", "fleet.maintenance.view")),
+    _perm: object = Depends(require_permission("fleet.maintenance.create")),
 ):
     # --- driver role: may only schedule maintenance on a vehicle assigned to them ---
     if user.role == "driver":

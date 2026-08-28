@@ -39,7 +39,7 @@ def create_incident(
     org_id: uuid.UUID = Depends(get_current_org_id),
     user_id: uuid.UUID = Depends(get_current_user_id),
     user=Depends(get_current_user),
-    _perm: object = Depends(require_any_permission("fleet.trip.create", "fleet.trip.view")),
+    _perm: object = Depends(require_permission("fleet.trip.create")),
 ):
     # --- driver role: only report incidents on their own vehicle; force driver_id ---
     if user.role == "driver":
