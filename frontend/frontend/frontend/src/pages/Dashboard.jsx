@@ -103,7 +103,7 @@ export default function Dashboard() {
     <div>
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.full_name || "there"}</h1>
           <p className="text-gray-500 text-sm">Overview of fleet operations and key metrics</p>
         </div>
         {user?.role === "administrator" && user?.organization_id && (
