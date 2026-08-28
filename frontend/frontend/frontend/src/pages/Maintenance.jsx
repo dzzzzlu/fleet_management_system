@@ -27,8 +27,9 @@ export default function Maintenance() {
   const { error, debug, handleError } = useErrorHandler();
   const { user } = useAuth();
   const canCreateMaint = can(user?.role, "maintenanceCreate");
-  const canComplete = can(user?.role, "maintenanceComplete");
-  // Drivers cannot read fuel logs (no fuel permission); hide that tab for them.
+  const canUpdate = can(user?.role, "maintenanceUpdate");
+  // Any role with maintenance.update (staff/manager/admin) may change the
+  // status of a maintenance record; the backend enforces this too.
   const isDriver = user?.role === "driver";
 
   const load = () => api.get("/maintenance").then((r) => setRecords(r.data)).catch((e) => handleError(e, "Failed to load maintenance records"));
@@ -72,12 +73,16 @@ export default function Maintenance() {
     }
   };
 
-  const complete = async (id) => {
+  const changeStatus = async (id, maintenance_status) => {
     try {
-      await api.patch(`/maintenance/${id}/status`, { maintenance_status: "completed", completed_date: new Date().toISOString().slice(0, 10) });
+      const payload = { maintenance_status };
+      if (maintenance_status === "completed") {
+        payload.completed_date = new Date().toISOString().slice(0, 10);
+      }
+      await api.patch(`/maintenance/${id}/status`, payload);
       load();
     } catch (err) {
-      handleError(err, "Failed to complete maintenance");
+      handleError(err, "Failed to update maintenance status");
     }
   };
 
@@ -207,12 +212,12 @@ export default function Maintenance() {
                   <th className="px-6 py-3">Maintenance Type</th>
                   <th className="px-6 py-3">Scheduled Date</th>
                   <th className="px-6 py-3">Status</th>
-                  {canComplete && <th className="px-6 py-3"></th>}
+                  {canUpdate && <th className="px-6 py-3"></th>}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 && (
-                  <tr><td colSpan={5} className="text-center py-16 text-gray-400">No records.</td></tr>
+                  <tr><td colSpan={canUpdate ? 6 : 5} className="text-center py-16 text-gray-400">No records.</td></tr>
                 )}
                 {filtered.map((r) => (
                   <tr key={r.id} className="border-t border-gray-100">
@@ -220,11 +225,16 @@ export default function Maintenance() {
                     <td className="px-6 py-4 text-gray-600">{r.maintenance_type}</td>
                     <td className="px-6 py-4 text-gray-600">{fmtDate(r.scheduled_date)}</td>
                     <td className="px-6 py-4"><StatusBadge status={r.maintenance_status} /></td>
-                    {canComplete && (
+                    {canUpdate && (
                       <td className="px-6 py-4 text-right">
-                        {r.maintenance_status !== "completed" && (
-                          <button onClick={() => complete(r.id)} className="text-green-600 text-xs font-medium">Mark completed</button>
-                        )}
+                        <select value={r.maintenance_status}
+                          onChange={(e) => changeStatus(r.id, e.target.value)}
+                          className="text-xs border border-gray-200 rounded px-2 py-1 bg-white">
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
                       </td>
                     )}
                   </tr>

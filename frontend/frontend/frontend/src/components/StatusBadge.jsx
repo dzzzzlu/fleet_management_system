@@ -8,6 +8,7 @@ const COLORS = {
   maintenance: "bg-amber-100 text-amber-700",
   pending: "bg-amber-100 text-amber-700",
   inactive: "bg-gray-100 text-gray-600",
+  on_leave: "bg-blue-100 text-blue-700",
   retired: "bg-red-100 text-red-700",
   cancelled: "bg-red-100 text-red-700",
   suspended: "bg-red-100 text-red-700",

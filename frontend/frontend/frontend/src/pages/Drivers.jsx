@@ -10,7 +10,7 @@ import { useErrorHandler } from "../hooks/useErrorHandler";
 import { useAuth } from "../auth/AuthContext";
 import { can } from "../auth/permissions";
 
-const EMPTY = { employee_number: "", full_name: "", license_number: "", phone: "" };
+const EMPTY = { employee_number: "", full_name: "", license_number: "", phone: "", license_expiry: "" };
 const PAGE_SIZE = 10;
 
 export default function Drivers() {
@@ -22,10 +22,13 @@ export default function Drivers() {
   const [tab, setTab] = useState("active");
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const { error, debug, handleError } = useErrorHandler();
   const { user } = useAuth();
   const canCreate = can(user?.role, "driverCreate");
+  const canEdit = can(user?.role, "driverUpdate");
+  const canDelete = can(user?.role, "driverDelete");
 
   const load = () => {
     api.get("/drivers").then((r) => setDrivers(r.data)).catch((e) => handleError(e, "Failed to load drivers"));
@@ -43,16 +46,32 @@ export default function Drivers() {
     return m;
   }, [trips, vehicles]);
 
+  const openNew = () => { setEditing(null); setForm(EMPTY); setModalOpen(true); };
+  const openEdit = (d) => { setEditing(d); setForm({ ...d }); setModalOpen(true); };
+
   const save = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/drivers", form);
+      const payload = { ...form, license_expiry: form.license_expiry || null, phone: form.phone || null };
+      if (editing) await api.patch(`/drivers/${editing.id}`, payload);
+      else await api.post("/drivers", payload);
       setModalOpen(false);
       setForm(EMPTY);
       load();
     } catch (err) {
-      handleError(err, "Failed to add driver");
+      handleError(err, editing ? "Failed to update driver" : "Failed to add driver");
     }
+  };
+
+  const changeStatus = async (id, status) => {
+    try { await api.patch(`/drivers/${id}`, { status }); load(); }
+    catch (err) { handleError(err, "Failed to update driver status"); }
+  };
+
+  const archive = async (id) => {
+    if (!window.confirm("Archive this driver? This hides them from the fleet roster.")) return;
+    try { await api.delete(`/drivers/${id}`); load(); }
+    catch (err) { handleError(err, "Failed to archive driver"); }
   };
 
   const tabFiltered = drivers.filter((d) => {
@@ -148,11 +167,12 @@ export default function Drivers() {
               <th className="px-6 py-3">License Number</th>
               <th className="px-6 py-3">Assigned Vehicle</th>
               <th className="px-6 py-3">Status</th>
+              {(canEdit || canDelete) && <th className="px-6 py-3"></th>}
             </tr>
           </thead>
           <tbody>
             {pageRows.length === 0 && (
-              <tr><td colSpan={5} className="text-center py-16 text-gray-400">No drivers found.</td></tr>
+              <tr><td colSpan={canEdit || canDelete ? 6 : 5} className="text-center py-16 text-gray-400">No drivers found.</td></tr>
             )}
             {pageRows.map((d) => (
               <tr key={d.id} className="border-t border-gray-100">
@@ -161,6 +181,25 @@ export default function Drivers() {
                 <td className="px-6 py-4 text-gray-500">{d.license_number}</td>
                 <td className="px-6 py-4 text-gray-500">{vehicleByDriver.get(d.id) || "Unassigned"}</td>
                 <td className="px-6 py-4"><StatusBadge status={d.status} /></td>
+                {(canEdit || canDelete) && (
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    {canEdit && (
+                      <>
+                        <select value={d.status} onChange={(e) => changeStatus(d.id, e.target.value)}
+                          className="mr-1 text-xs border border-gray-200 rounded px-2 py-1 bg-white">
+                          <option value="active">Active</option>
+                          <option value="on_leave">On Leave</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="suspended">Suspended</option>
+                        </select>
+                        <button onClick={() => openEdit(d)} className="text-navy-700 text-xs font-semibold hover:text-navy-900 mr-3">Edit</button>
+                      </>
+                    )}
+                    {canDelete && (
+                      <button onClick={() => archive(d.id)} className="text-red-600 text-xs font-medium hover:text-red-800">Archive</button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -177,21 +216,34 @@ export default function Drivers() {
         )}
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Driver">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Edit Driver" : "Add Driver"}>
         <form onSubmit={save} className="space-y-3">
-          {["employee_number", "full_name", "license_number", "phone"].map((key) => (
+          {["employee_number", "full_name", "license_number", "phone", "license_expiry"].map((key) => (
             <div key={key}>
               <label className="text-xs text-gray-500 capitalize">{key.replace("_", " ")}</label>
               <input
-                required={key !== "phone"}
-                value={form[key]}
+                required={key !== "phone" && key !== "license_expiry"}
+                type={key === "license_expiry" ? "date" : "text"}
+                value={form[key] || ""}
                 onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                 className="w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm"
               />
             </div>
           ))}
+          {editing && (
+            <div>
+              <label className="text-xs text-gray-500 capitalize">Status</label>
+              <select value={form.status || "active"} onChange={(e) => setForm({ ...form, status: e.target.value })}
+                className="w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+                <option value="active">Active</option>
+                <option value="on_leave">On Leave</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+          )}
           <button type="submit" className="w-full mt-5 bg-navy-600 text-white font-medium py-3 rounded-lg hover:bg-navy-700 transition-colors">
-            Add driver
+            {editing ? "Save changes" : "Add driver"}
           </button>
         </form>
       </Modal>

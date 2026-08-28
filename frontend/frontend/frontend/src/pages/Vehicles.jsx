@@ -79,6 +79,11 @@ export default function Vehicles() {
     catch (err) { handleError(err, "Failed to archive vehicle"); }
   };
 
+  const changeStatus = async (id, status) => {
+    try { await api.patch(`/vehicles/${id}`, { status }); load(); }
+    catch (err) { handleError(err, "Failed to update vehicle status"); }
+  };
+
   const tabFiltered = vehicles.filter((v) => {
     if (tab === "active") return v.status === "available" || v.status === "assigned";
     if (tab === "maintenance") return v.status === "maintenance";
@@ -204,8 +209,18 @@ export default function Vehicles() {
                 <td className="px-6 py-4"><StatusBadge status={v.status} /></td>
                 <td className="px-6 py-4 text-gray-500">{lastMaintenanceByVehicle.get(v.id) ? fmtDate(lastMaintenanceByVehicle.get(v.id)) : "—"}</td>
                 {(canEdit || canDelete) && (
-                  <td className="px-6 py-4 text-right space-x-3">
-                    {canEdit && <button onClick={() => openEdit(v)} className="text-navy-700 text-xs font-semibold hover:text-navy-900">Edit</button>}
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    {canEdit && (
+                      <select value={v.status} onChange={(e) => changeStatus(v.id, e.target.value)}
+                        className="mr-1 text-xs border border-gray-200 rounded px-2 py-1 bg-white">
+                        <option value="available">Available</option>
+                        <option value="assigned">Assigned</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="retired">Retired</option>
+                      </select>
+                    )}
+                    {canEdit && <button onClick={() => openEdit(v)} className="text-navy-700 text-xs font-semibold hover:text-navy-900 mr-3">Edit</button>}
                     {canDelete && <button onClick={() => archive(v.id)} className="text-red-600 text-xs font-medium">Archive</button>}
                   </td>
                 )}
