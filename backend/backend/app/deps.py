@@ -112,6 +112,22 @@ def require_any_permission(*permissions: str):
     return checker
 
 
+def require_any_role(*roles: str):
+    """
+    Gate an endpoint to a set of role names (e.g. administrator + manager),
+    regardless of the granular permission matrix. Used for admin/manager-only
+    areas like the Archives page.
+    """
+    def checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in roles:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                f"Access restricted to: {', '.join(roles)}",
+            )
+        return current_user
+    return checker
+
+
 def driver_record_for_user(db: Session, user: User) -> Driver | None:
     """
     Resolve the fleet_drivers row belonging to a role='driver' account,

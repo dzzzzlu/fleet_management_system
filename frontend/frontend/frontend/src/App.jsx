@@ -12,6 +12,7 @@ import Maintenance from "./pages/Maintenance";
 import Incidents from "./pages/Incidents";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Archives from "./pages/Archives";
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/incidents" element={<Incidents />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/archives" element={<Archives />} />
           </Route>
         </Routes>
       </BrowserRouter>

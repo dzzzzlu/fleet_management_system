@@ -9,6 +9,7 @@ import {
   TriangleAlert,
   ClipboardList,
   Settings as SettingsIcon,
+  Archive as ArchiveIcon,
   Bell,
   LogOut,
 } from "lucide-react";
@@ -30,6 +31,9 @@ const NAV = [
   { section: "INSIGHTS", items: [
     { to: "/reports", label: "Reports", Icon: ClipboardList },
   ]},
+  { section: "MANAGEMENT", items: [
+    { to: "/archives", label: "Archives", Icon: ArchiveIcon },
+  ]},
   { section: "ADMIN", items: [
     { to: "/settings", label: "Settings", Icon: SettingsIcon },
   ]},
@@ -45,7 +49,7 @@ const MOBILE_NAV = [
 
 const CRUMBS = {
   "/": "Dashboard", "/vehicles": "Vehicles", "/drivers": "Drivers",
-  "/trips": "Trips", "/maintenance": "Maintenance", "/incidents": "Incidents", "/reports": "Reports", "/settings": "Settings",
+  "/trips": "Trips", "/maintenance": "Maintenance", "/incidents": "Incidents", "/reports": "Reports", "/settings": "Settings", "/archives": "Archives",
 };
 
 function LogoMark({ size = "md" }) {

@@ -7,8 +7,8 @@
 export const ROLE_ROUTES = {
   viewer: ["/", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/reports"],
   staff: ["/", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/reports"],
-  manager: ["/", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/reports"],
-  administrator: ["/", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/reports", "/settings"],
+  manager: ["/", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/reports", "/archives"],
+  administrator: ["/", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/reports", "/settings", "/archives"],
   driver: ["/", "/trips", "/maintenance", "/incidents", "/reports"],
 };
 
