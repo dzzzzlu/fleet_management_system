@@ -6,7 +6,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import vehicles, drivers, trips, maintenance, fuel_logs, dashboard, incidents, auth, notifications, archives
+from app.routers import vehicles, drivers, trips, maintenance, fuel_logs, dashboard, incidents, auth, notifications, archives, assignments
 
 app = FastAPI(title="Argo Fleet Management Module")
 
@@ -32,6 +32,7 @@ app.include_router(fuel_logs.router)
 app.include_router(incidents.router)
 app.include_router(notifications.router)
 app.include_router(archives.router)
+app.include_router(assignments.router)
 
 
 @app.get("/api/health")
