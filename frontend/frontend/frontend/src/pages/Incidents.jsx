@@ -19,6 +19,7 @@ export default function Incidents() {
   const { error, debug, handleError } = useErrorHandler();
   const { user } = useAuth();
   const canCreate = can(user?.role, "tripCreate");
+  const canUpdate = can(user?.role, "tripUpdate");
 
   const load = () => api.get("/incidents").then((r) => setRecords(r.data)).catch((e) => handleError(e, "Failed to load incidents"));
   useEffect(() => {
@@ -27,6 +28,15 @@ export default function Incidents() {
   }, []);
 
   const plate = (id) => vehicles.find((v) => v.id === id)?.plate_number || "—";
+
+  const changeStatus = async (id, incident_status) => {
+    try {
+      await api.patch(`/incidents/${id}`, { incident_status });
+      load();
+    } catch (err) {
+      handleError(err, "Failed to update incident status");
+    }
+  };
 
   const save = async (e) => {
     e.preventDefault();
@@ -102,7 +112,26 @@ export default function Incidents() {
                 <td className="px-6 py-4 text-gray-600 capitalize">{r.incident_type}</td>
                 <td className="px-6 py-4 text-gray-600">{fmtDate(r.incident_date)}</td>
                 <td className="px-6 py-4 text-gray-600">{r.estimated_cost != null ? `₱${r.estimated_cost}` : "—"}</td>
-                <td className="px-6 py-4"><StatusBadge status={r.incident_status} /></td>
+                <td className="px-6 py-4">
+                  {canUpdate ? (
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={r.incident_status} />
+                      <select
+                        value={r.incident_status}
+                        onChange={(e) => changeStatus(r.id, e.target.value)}
+                        className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-navy-500"
+                        title="Change status"
+                      >
+                        <option value="reported">Reported</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <StatusBadge status={r.incident_status} />
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
