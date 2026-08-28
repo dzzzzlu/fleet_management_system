@@ -9,6 +9,8 @@ import Tabs from "../components/Tabs";
 import Modal from "../components/Modal";
 import { groupByMonth, groupByKey, isToday } from "../utils/format";
 import { useErrorHandler } from "../hooks/useErrorHandler";
+import { useAuth } from "../auth/AuthContext";
+import { can } from "../auth/permissions";
 
 export default function Trips() {
   const [trips, setTrips] = useState([]);
@@ -20,6 +22,9 @@ export default function Trips() {
   const [tab, setTab] = useState("active");
   const [form, setForm] = useState({ vehicle_id: "", driver_id: "", trip_number: "", destination: "", departure_time: "" });
   const { error: loadError, debug: loadDebug, handleError: handleLoadError } = useErrorHandler();
+  const { user } = useAuth();
+  const canCreate = can(user?.role, "tripCreate");
+  const canUpdate = can(user?.role, "tripUpdate");
 
   const load = () => api.get("/trips").then((r) => setTrips(r.data)).catch((e) => handleLoadError(e, "Failed to load trips"));
   useEffect(() => {
@@ -77,9 +82,13 @@ export default function Trips() {
           <h1 className="text-2xl font-bold text-gray-900">Trips</h1>
           <p className="text-gray-500 text-sm">{stats.today} active trips today</p>
         </div>
-        <button onClick={() => setModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
-          + Log trip
-        </button>
+        {canCreate ? (
+          <button onClick={() => setModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
+            + Log trip
+          </button>
+        ) : (
+          <span className="text-xs text-gray-400 self-center">View only</span>
+        )}
       </div>
 
       <Tabs
@@ -142,7 +151,7 @@ export default function Trips() {
               <th className="px-6 py-3">Vehicle</th>
               <th className="px-6 py-3">Destination</th>
               <th className="px-6 py-3">Status</th>
-              <th className="px-6 py-3"></th>
+              {canUpdate && <th className="px-6 py-3"></th>}
             </tr>
           </thead>
           <tbody>
@@ -156,14 +165,16 @@ export default function Trips() {
                 <td className="px-6 py-4 text-gray-600">{vehicleName(t.vehicle_id)}</td>
                 <td className="px-6 py-4 text-gray-600">{t.destination}</td>
                 <td className="px-6 py-4"><StatusBadge status={t.trip_status} /></td>
-                <td className="px-6 py-4 text-right space-x-3">
-                  {t.trip_status === "scheduled" && (
-                    <button onClick={() => setStatus(t.id, "active")} className="text-navy-700 text-xs font-semibold hover:text-navy-900">Start</button>
-                  )}
-                  {t.trip_status === "active" && (
-                    <button onClick={() => setStatus(t.id, "completed")} className="text-green-600 text-xs font-medium">Complete</button>
-                  )}
-                </td>
+                {canUpdate && (
+                  <td className="px-6 py-4 text-right space-x-3">
+                    {t.trip_status === "scheduled" && (
+                      <button onClick={() => setStatus(t.id, "active")} className="text-navy-700 text-xs font-semibold hover:text-navy-900">Start</button>
+                    )}
+                    {t.trip_status === "active" && (
+                      <button onClick={() => setStatus(t.id, "completed")} className="text-green-600 text-xs font-medium">Complete</button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

@@ -7,6 +7,8 @@ import Tabs from "../components/Tabs";
 import Modal from "../components/Modal";
 import { toCSV, downloadCSV, fmtDate } from "../utils/format";
 import { useErrorHandler } from "../hooks/useErrorHandler";
+import { useAuth } from "../auth/AuthContext";
+import { can } from "../auth/permissions";
 
 const EMPTY = { plate_number: "", vehicle_type: "Sedan", brand: "", model: "", year: "", status: "available", insurance_provider: "", insurance_policy_number: "", insurance_expiry: "" };
 const PAGE_SIZE = 10;
@@ -25,6 +27,10 @@ export default function Vehicles() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const { error, debug, handleError } = useErrorHandler();
+  const { user } = useAuth();
+  const canCreate = can(user?.role, "vehicleCreate");
+  const canEdit = can(user?.role, "vehicleUpdate");
+  const canDelete = can(user?.role, "vehicleDelete");
 
   const load = () => {
     api.get("/vehicles").then((r) => setVehicles(r.data)).catch((e) => handleError(e, "Failed to load vehicles"));
@@ -117,9 +123,13 @@ export default function Vehicles() {
           <h1 className="text-2xl font-bold text-gray-900">Vehicles</h1>
           <p className="text-gray-500 text-sm">{counts.total} vehicles · {counts.maintenance} in maintenance</p>
         </div>
-        <button onClick={openNew} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
-          + New vehicle
-        </button>
+        {canCreate ? (
+          <button onClick={openNew} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
+            + New vehicle
+          </button>
+        ) : user?.role === "driver" ? null : (
+          <span className="text-xs text-gray-400 self-center">View only</span>
+        )}
       </div>
 
       {error && (
@@ -178,7 +188,7 @@ export default function Vehicles() {
               <th className="px-6 py-3">Driver</th>
               <th className="px-6 py-3">Status</th>
               <th className="px-6 py-3">Last Maintenance</th>
-              <th className="px-6 py-3"></th>
+              {(canEdit || canDelete) && <th className="px-6 py-3"></th>}
             </tr>
           </thead>
           <tbody>
@@ -193,10 +203,12 @@ export default function Vehicles() {
                 <td className="px-6 py-4 text-gray-500">{driverByVehicle.get(v.id) || "Unassigned"}</td>
                 <td className="px-6 py-4"><StatusBadge status={v.status} /></td>
                 <td className="px-6 py-4 text-gray-500">{lastMaintenanceByVehicle.get(v.id) ? fmtDate(lastMaintenanceByVehicle.get(v.id)) : "—"}</td>
-                <td className="px-6 py-4 text-right space-x-3">
-                  <button onClick={() => openEdit(v)} className="text-navy-700 text-xs font-semibold hover:text-navy-900">Edit</button>
-                  <button onClick={() => archive(v.id)} className="text-red-600 text-xs font-medium">Archive</button>
-                </td>
+                {(canEdit || canDelete) && (
+                  <td className="px-6 py-4 text-right space-x-3">
+                    {canEdit && <button onClick={() => openEdit(v)} className="text-navy-700 text-xs font-semibold hover:text-navy-900">Edit</button>}
+                    {canDelete && <button onClick={() => archive(v.id)} className="text-red-600 text-xs font-medium">Archive</button>}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

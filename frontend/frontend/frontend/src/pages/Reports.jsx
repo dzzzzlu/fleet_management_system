@@ -5,6 +5,7 @@ import ChartCard from "../components/ChartCard";
 import Tabs from "../components/Tabs";
 import { groupByMonth, groupByKey, toCSV, downloadCSV } from "../utils/format";
 import { useErrorHandler } from "../hooks/useErrorHandler";
+import { useAuth } from "../auth/AuthContext";
 
 const STATUS_COLORS = { available: "#10b981", assigned: "#3d67a8", maintenance: "#f59e0b", inactive: "#9ca3af", retired: "#ef4444" };
 
@@ -15,11 +16,25 @@ export default function Reports() {
   const [fuelLogs, setFuelLogs] = useState([]);
   const [tab, setTab] = useState("fleet");
   const { error, debug, handleError } = useErrorHandler();
+  const { user } = useAuth();
+  const isDriver = user?.role === "driver";
 
   useEffect(() => {
-    Promise.all([api.get("/vehicles"), api.get("/trips"), api.get("/maintenance"), api.get("/fuel-logs")])
-      .then(([v, t, m, f]) => { setVehicles(v.data); setTrips(t.data); setMaintenance(m.data); setFuelLogs(f.data); })
-      .catch((e) => handleError(e, "Failed to load report data"));
+    // Drivers cannot read vehicles/fuel-logs (no permission); only fetch the
+    // scoped endpoints they can access (their own trips/maintenance/incidents).
+    if (isDriver) {
+      setTab("trip");
+      Promise.all([
+        api.get("/trips").catch(() => ({ data: [] })),
+        api.get("/maintenance").catch(() => ({ data: [] })),
+      ])
+        .then(([t, m]) => { setTrips(t.data); setMaintenance(m.data); })
+        .catch((e) => handleError(e, "Failed to load report data"));
+    } else {
+      Promise.all([api.get("/vehicles"), api.get("/trips"), api.get("/maintenance"), api.get("/fuel-logs")])
+        .then(([v, t, m, f]) => { setVehicles(v.data); setTrips(t.data); setMaintenance(m.data); setFuelLogs(f.data); })
+        .catch((e) => handleError(e, "Failed to load report data"));
+    }
   }, []);
 
   const statusCounts = vehicles.reduce((acc, v) => { acc[v.status] = (acc[v.status] || 0) + 1; return acc; }, {});
@@ -84,12 +99,17 @@ export default function Reports() {
       <Tabs
         active={tab}
         onChange={setTab}
-        tabs={[
-          { value: "fleet", label: "Fleet Reports" },
-          { value: "maintenance", label: "Maintenance Reports" },
-          { value: "fuel", label: "Fuel Reports" },
-          { value: "trip", label: "Trip Reports" },
-        ]}
+        tabs={isDriver
+          ? [
+              { value: "trip", label: "Trip Reports" },
+              { value: "maintenance", label: "Maintenance Reports" },
+            ]
+          : [
+              { value: "fleet", label: "Fleet Reports" },
+              { value: "maintenance", label: "Maintenance Reports" },
+              { value: "fuel", label: "Fuel Reports" },
+              { value: "trip", label: "Trip Reports" },
+            ]}
       />
 
       {error && (

@@ -10,6 +10,7 @@ import { groupByMonth, fmtDate } from "../utils/format";
 import { useErrorHandler } from "../hooks/useErrorHandler";
 import { StatCardSkeleton, Skeleton } from "../components/Skeleton";
 import { useAuth } from "../auth/AuthContext";
+import { can } from "../auth/permissions";
 
 const STATUS_COLORS = { available: "#10b981", assigned: "#3d67a8", maintenance: "#f59e0b", inactive: "#9ca3af", retired: "#ef4444" };
 
@@ -25,17 +26,39 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   useEffect(() => {
-    Promise.all([
-      api.get("/dashboard/summary"),
-      api.get("/vehicles"),
-      api.get("/drivers"),
-      api.get("/trips"),
-      api.get("/maintenance"),
-      api.get("/fuel-logs"),
-    ]).then(([s, v, d, t, m, f]) => {
-      setData(s.data); setVehicles(v.data); setDrivers(d.data);
-      setTrips(t.data); setMaintenance(m.data); setFuelLogs(f.data);
-    }).catch((e) => handleError(e, "Failed to load dashboard data"));
+    const requests = [api.get("/dashboard/summary")];
+    // Drivers cannot access org-wide vehicles/drivers/fuel; fetch only the
+    // scoped endpoints they can read (their own trips/maintenance/incidents).
+    if (user?.role === "driver") {
+      requests.push(
+        api.get("/trips").catch(() => ({ data: [] })),
+        api.get("/maintenance").catch(() => ({ data: [] })),
+        api.get("/incidents").catch(() => ({ data: [] })),
+      );
+    } else {
+      requests.push(
+        api.get("/vehicles"),
+        api.get("/drivers"),
+        api.get("/trips"),
+        api.get("/maintenance"),
+        api.get("/fuel-logs"),
+      );
+    }
+    Promise.all(requests)
+      .then(([s, v, d, t, m, f]) => {
+        setData(s.data);
+        if (user?.role === "driver") {
+          setTrips(v?.data || []);
+          setMaintenance(d?.data || []);
+          setDrivers([]);
+          setVehicles([]);
+          setFuelLogs([]);
+        } else {
+          setVehicles(v.data); setDrivers(d.data);
+          setTrips(t.data); setMaintenance(m.data); setFuelLogs(f.data);
+        }
+      })
+      .catch((e) => handleError(e, "Failed to load dashboard data"));
   }, []);
 
   if (!data) {

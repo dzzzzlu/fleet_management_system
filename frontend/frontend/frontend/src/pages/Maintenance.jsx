@@ -9,6 +9,8 @@ import Tabs from "../components/Tabs";
 import Modal from "../components/Modal";
 import { groupByMonth, fmtDate } from "../utils/format";
 import { useErrorHandler } from "../hooks/useErrorHandler";
+import { useAuth } from "../auth/AuthContext";
+import { can } from "../auth/permissions";
 
 const EMPTY_FUEL = { vehicle_id: "", driver_id: "", fuel_date: "", liters: "", cost: "", odometer: "", station: "" };
 
@@ -23,6 +25,11 @@ export default function Maintenance() {
   const [form, setForm] = useState({ vehicle_id: "", maintenance_type: "", scheduled_date: "" });
   const [fuelForm, setFuelForm] = useState(EMPTY_FUEL);
   const { error, debug, handleError } = useErrorHandler();
+  const { user } = useAuth();
+  const canCreateMaint = can(user?.role, "maintenanceCreate");
+  const canComplete = can(user?.role, "maintenanceComplete");
+  // Drivers cannot read fuel logs (no fuel permission); hide that tab for them.
+  const isDriver = user?.role === "driver";
 
   const load = () => api.get("/maintenance").then((r) => setRecords(r.data)).catch((e) => handleError(e, "Failed to load maintenance records"));
   const loadFuel = () => api.get("/fuel-logs").then((r) => setFuelLogs(r.data)).catch((e) => handleError(e, "Failed to load fuel logs"));
@@ -95,14 +102,18 @@ export default function Maintenance() {
           <p className="text-gray-500 text-sm">{records.filter((r) => r.maintenance_status === "pending").length} pending</p>
         </div>
         <div className="space-x-2">
-          {tab === "fuel_logs" ? (
-            <button onClick={() => setFuelModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
-              + Add fuel log
-            </button>
+          {canCreateMaint ? (
+            tab === "fuel_logs" ? (
+              <button onClick={() => setFuelModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
+                + Add fuel log
+              </button>
+            ) : (
+              <button onClick={() => setModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
+                + Schedule maintenance
+              </button>
+            )
           ) : (
-            <button onClick={() => setModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
-              + Schedule maintenance
-            </button>
+            <span className="text-xs text-gray-400 self-center">View only</span>
           )}
         </div>
       </div>
@@ -114,7 +125,7 @@ export default function Maintenance() {
           { value: "pending", label: "Scheduled" },
           { value: "in_progress", label: "Ongoing" },
           { value: "completed", label: "Completed" },
-          { value: "fuel_logs", label: "Fuel Logs" },
+          ...(!isDriver ? [{ value: "fuel_logs", label: "Fuel Logs" }] : []),
         ]}
       />
 
@@ -196,7 +207,7 @@ export default function Maintenance() {
                   <th className="px-6 py-3">Maintenance Type</th>
                   <th className="px-6 py-3">Scheduled Date</th>
                   <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3"></th>
+                  {canComplete && <th className="px-6 py-3"></th>}
                 </tr>
               </thead>
               <tbody>
@@ -209,11 +220,13 @@ export default function Maintenance() {
                     <td className="px-6 py-4 text-gray-600">{r.maintenance_type}</td>
                     <td className="px-6 py-4 text-gray-600">{fmtDate(r.scheduled_date)}</td>
                     <td className="px-6 py-4"><StatusBadge status={r.maintenance_status} /></td>
-                    <td className="px-6 py-4 text-right">
-                      {r.maintenance_status !== "completed" && (
-                        <button onClick={() => complete(r.id)} className="text-green-600 text-xs font-medium">Mark completed</button>
-                      )}
-                    </td>
+                    {canComplete && (
+                      <td className="px-6 py-4 text-right">
+                        {r.maintenance_status !== "completed" && (
+                          <button onClick={() => complete(r.id)} className="text-green-600 text-xs font-medium">Mark completed</button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

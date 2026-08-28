@@ -7,6 +7,8 @@ import Tabs from "../components/Tabs";
 import Modal from "../components/Modal";
 import { toCSV, downloadCSV } from "../utils/format";
 import { useErrorHandler } from "../hooks/useErrorHandler";
+import { useAuth } from "../auth/AuthContext";
+import { can } from "../auth/permissions";
 
 const EMPTY = { employee_number: "", full_name: "", license_number: "", phone: "" };
 const PAGE_SIZE = 10;
@@ -22,6 +24,8 @@ export default function Drivers() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const { error, debug, handleError } = useErrorHandler();
+  const { user } = useAuth();
+  const canCreate = can(user?.role, "driverCreate");
 
   const load = () => {
     api.get("/drivers").then((r) => setDrivers(r.data)).catch((e) => handleError(e, "Failed to load drivers"));
@@ -86,9 +90,13 @@ export default function Drivers() {
           <h1 className="text-2xl font-bold text-gray-900">Drivers</h1>
           <p className="text-gray-500 text-sm">{counts.active} active drivers</p>
         </div>
-        <button onClick={() => setModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
-          + Add driver
-        </button>
+        {canCreate ? (
+          <button onClick={() => setModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
+            + Add driver
+          </button>
+        ) : user?.role === "driver" ? null : (
+          <span className="text-xs text-gray-400 self-center">View only</span>
+        )}
       </div>
 
       {error && (

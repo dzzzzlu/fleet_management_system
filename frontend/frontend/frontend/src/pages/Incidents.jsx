@@ -7,6 +7,8 @@ import Tabs from "../components/Tabs";
 import Modal from "../components/Modal";
 import { fmtDate } from "../utils/format";
 import { useErrorHandler } from "../hooks/useErrorHandler";
+import { useAuth } from "../auth/AuthContext";
+import { can } from "../auth/permissions";
 
 export default function Incidents() {
   const [records, setRecords] = useState([]);
@@ -15,6 +17,8 @@ export default function Incidents() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ vehicle_id: "", incident_type: "accident", incident_date: "", description: "" });
   const { error, debug, handleError } = useErrorHandler();
+  const { user } = useAuth();
+  const canCreate = can(user?.role, "tripCreate");
 
   const load = () => api.get("/incidents").then((r) => setRecords(r.data)).catch((e) => handleError(e, "Failed to load incidents"));
   useEffect(() => {
@@ -44,9 +48,13 @@ export default function Incidents() {
           <h1 className="text-2xl font-bold text-gray-900">Incidents</h1>
           <p className="text-gray-500 text-sm">{records.filter((r) => r.incident_status === "reported").length} reported</p>
         </div>
-        <button onClick={() => setModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
-          + Report incident
-        </button>
+        {canCreate ? (
+          <button onClick={() => setModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
+            + Report incident
+          </button>
+        ) : (
+          <span className="text-xs text-gray-400 self-center">View only</span>
+        )}
       </div>
 
       <Tabs
