@@ -1,14 +1,28 @@
 import uuid
+from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_current_org_id, get_current_user_id, get_current_user, require_permission, driver_record_for_user, driver_assigned_vehicle_ids
 from app.models.vehicle import Vehicle
 from app.models.vehicle_assignment import VehicleAssignment
+from app.models.fuel_log import FuelLog
+from app.models.trip import Trip
 from app.schemas.vehicle import VehicleCreate, VehicleUpdate, VehicleOut
 
 router = APIRouter(prefix="/api/vehicles", tags=["vehicles"])
+
+
+def _current_odometer_for(db: Session, vehicle_id: uuid.UUID) -> Decimal | None:
+    best: Decimal | None = None
+    fuel = db.query(func.max(FuelLog.odometer)).filter(FuelLog.vehicle_id == vehicle_id).scalar()
+    trip = db.query(func.max(Trip.odometer_end)).filter(Trip.vehicle_id == vehicle_id).scalar()
+    for value in (fuel, trip):
+        if value is not None and (best is None or value > best):
+            best = value
+    return best
 
 
 @router.get("", response_model=list[VehicleOut])
@@ -31,7 +45,28 @@ def list_vehicles(
         q = q.filter(Vehicle.id.in_(ids))
     if status_filter:
         q = q.filter(Vehicle.status == status_filter)
-    return q.order_by(Vehicle.created_at.desc()).all()
+    vehicles = q.order_by(Vehicle.created_at.desc()).all()
+    if vehicles:
+        ids = [v.id for v in vehicles]
+        fuel_max = dict(
+            db.query(FuelLog.vehicle_id, func.max(FuelLog.odometer))
+            .filter(FuelLog.vehicle_id.in_(ids))
+            .group_by(FuelLog.vehicle_id)
+            .all()
+        )
+        trip_max = dict(
+            db.query(Trip.vehicle_id, func.max(Trip.odometer_end))
+            .filter(Trip.vehicle_id.in_(ids))
+            .group_by(Trip.vehicle_id)
+            .all()
+        )
+        for v in vehicles:
+            reading = max(
+                [r for r in (fuel_max.get(v.id), trip_max.get(v.id)) if r is not None],
+                default=None,
+            )
+            v.current_odometer = reading
+    return vehicles
 
 
 @router.post("", response_model=VehicleOut, status_code=201)
@@ -76,6 +111,7 @@ def get_vehicle(
     )
     if not vehicle:
         raise HTTPException(404, "Vehicle not found")
+    vehicle.current_odometer = _current_odometer_for(db, vehicle.id)
     return vehicle
 
 

@@ -46,3 +46,5 @@ class VehicleOut(VehicleBase):
     organization_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    # computed — latest known odometer (fuel logs / trip completions)
+    current_odometer: Decimal | None = None

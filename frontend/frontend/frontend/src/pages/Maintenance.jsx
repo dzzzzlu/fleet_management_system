@@ -66,6 +66,21 @@ export default function Maintenance() {
 
   const plate = (id) => vehicles.find((v) => v.id === id)?.plate_number || "—";
 
+  const selectFuelVehicle = (id) => {
+    const v = vehicles.find((veh) => veh.id === id);
+    const current = v?.current_odometer;
+    setFuelForm((prev) => ({
+      ...prev,
+      vehicle_id: id,
+      odometer: current != null && current !== "" ? String(current) : prev.odometer,
+    }));
+  };
+
+  const openFuelModal = () => {
+    setFuelForm(EMPTY_FUEL);
+    setFuelModalOpen(true);
+  };
+
   const save = async (e) => {
     e.preventDefault();
     try {
@@ -113,7 +128,7 @@ export default function Maintenance() {
         <div className="space-x-2">
           {canCreateMaint ? (
             tab === "fuel_logs" ? (
-              <button onClick={() => setFuelModalOpen(true)} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
+              <button onClick={openFuelModal} className="bg-navy-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-navy-700 transition-colors">
                 + Add fuel log
               </button>
             ) : (
@@ -292,7 +307,7 @@ export default function Maintenance() {
         <form onSubmit={saveFuel} className="space-y-3">
           <div>
             <label className="text-xs text-gray-500">Vehicle</label>
-            <select required value={fuelForm.vehicle_id} onChange={(e) => setFuelForm({ ...fuelForm, vehicle_id: e.target.value })}
+            <select required value={fuelForm.vehicle_id} onChange={(e) => selectFuelVehicle(e.target.value)}
               className="w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm">
               <option value="">Select vehicle</option>
               {vehicles.map((v) => <option key={v.id} value={v.id}>{v.plate_number} — {v.brand} {v.model}</option>)}
@@ -326,9 +341,10 @@ export default function Maintenance() {
             <span className="font-semibold text-navy-800">₱{autoFuelCost}</span>
           </div>
           <div>
-            <label className="text-xs text-gray-500">Odometer (optional)</label>
-            <input type="number" step="0.01" inputMode="decimal" autoComplete="off" value={fuelForm.odometer} onChange={(e) => setFuelForm({ ...fuelForm, odometer: e.target.value })}
-              className="w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm" />
+            <label className="text-xs text-gray-500">Odometer (auto-filled from vehicle's last reading)</label>
+            <input type="number" step="0.01" inputMode="decimal" autoComplete="off" value={fuelForm.odometer}
+              onChange={(e) => setFuelForm({ ...fuelForm, odometer: e.target.value })}
+              className="w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm" placeholder="Auto-filled when you pick a vehicle" />
           </div>
           <div>
             <label className="text-xs text-gray-500">Station (optional)</label>
