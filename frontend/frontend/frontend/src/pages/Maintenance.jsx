@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Fuel, Banknote, Wrench, CarFront, Clock3 } from "lucide-react";
+import { Wallet, Droplets, GaugeCircle, Wrench, CarFront, Clock3 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import api from "../api/client";
 import StatusBadge from "../components/StatusBadge";
@@ -12,7 +12,7 @@ import { useErrorHandler } from "../hooks/useErrorHandler";
 import { useAuth } from "../auth/AuthContext";
 import { can } from "../auth/permissions";
 
-const EMPTY_FUEL = { vehicle_id: "", driver_id: "", fuel_date: "", liters: "", cost: "", odometer: "", station: "" };
+const EMPTY_FUEL = { vehicle_id: "", driver_id: "", fuel_date: "", liters: "", price_per_liter: "", odometer: "", station: "" };
 
 export default function Maintenance() {
   const [records, setRecords] = useState([]);
@@ -48,7 +48,7 @@ export default function Maintenance() {
         ...fuelForm,
         driver_id: fuelForm.driver_id || null,
         liters: Number(fuelForm.liters),
-        cost: Number(fuelForm.cost),
+        price_per_liter: fuelForm.price_per_liter ? Number(fuelForm.price_per_liter) : undefined,
         odometer: fuelForm.odometer ? Number(fuelForm.odometer) : null,
       };
       await api.post("/fuel-logs", payload);
@@ -59,6 +59,10 @@ export default function Maintenance() {
       handleError(err, "Failed to save fuel log");
     }
   };
+
+  const fuelLiters = Number(fuelForm.liters) || 0;
+  const fuelPrice = Number(fuelForm.price_per_liter) || 0;
+  const autoFuelCost = (fuelLiters * fuelPrice).toFixed(2);
 
   const plate = (id) => vehicles.find((v) => v.id === id)?.plate_number || "—";
 
@@ -143,9 +147,18 @@ export default function Maintenance() {
 
       {tab === "fuel_logs" ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <StatCard icon={Fuel} iconBg="bg-navy-100" iconColor="text-navy-700" value={fuelLogs.length} label="Total Fuel Logs" />
-            <StatCard icon={Banknote} iconBg="bg-green-100" iconColor="text-green-700" value={`₱${fuelLogs.reduce((s, f) => s + Number(f.cost), 0).toFixed(2)}`} label="Total Fuel Cost" />
+          <p className="text-gray-500 text-sm mb-4 -mt-1">Cost is auto-computed from liters × price per liter</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <StatCard icon={Wallet} iconBg="bg-navy-100" iconColor="text-navy-700"
+              value={`₱${fuelLogs.reduce((s, f) => s + Number(f.cost || 0), 0).toLocaleString()}`} label="Total Fuel Cost" />
+            <StatCard icon={Droplets} iconBg="bg-purple-100" iconColor="text-purple-700"
+              value={`${fuelLogs.reduce((s, f) => s + Number(f.liters || 0), 0).toLocaleString()} L`} label="Total Liters" />
+            <StatCard icon={GaugeCircle} iconBg="bg-brand-100" iconColor="text-brand-700"
+              value={`₱${(() => {
+                const tot = fuelLogs.reduce((s, f) => s + Number(f.cost || 0), 0);
+                const lit = fuelLogs.reduce((s, f) => s + Number(f.liters || 0), 0);
+                return lit ? (tot / lit).toFixed(2) : "0.00";
+              })()}`} label="Avg Price / Liter" />
           </div>
           <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
@@ -154,20 +167,24 @@ export default function Maintenance() {
                   <th className="px-6 py-3">Vehicle</th>
                   <th className="px-6 py-3">Date</th>
                   <th className="px-6 py-3">Liters</th>
-                  <th className="px-6 py-3">Cost</th>
+                  <th className="px-6 py-3">Price / L</th>
+                  <th className="px-6 py-3">Total Cost</th>
+                  <th className="px-6 py-3">Odometer</th>
                   <th className="px-6 py-3">Station</th>
                 </tr>
               </thead>
               <tbody>
                 {fuelLogs.length === 0 && (
-                  <tr><td colSpan={5} className="text-center py-16 text-gray-400">No fuel logs yet.</td></tr>
+                  <tr><td colSpan={7} className="text-center py-16 text-gray-400">No fuel logs yet.</td></tr>
                 )}
                 {fuelLogs.map((f) => (
                   <tr key={f.id} className="border-t border-gray-100">
-                    <td className="px-6 py-4 font-medium text-gray-900">{plate(f.vehicle_id)}</td>
+                    <td className="px-6 py-4 font-medium text-gray-900">{f.vehicle_plate || plate(f.vehicle_id)}</td>
                     <td className="px-6 py-4 text-gray-600">{fmtDate(f.fuel_date)}</td>
-                    <td className="px-6 py-4 text-gray-600">{f.liters} L</td>
-                    <td className="px-6 py-4 text-gray-600">₱{Number(f.cost).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-gray-600">{Number(f.liters).toLocaleString()} L</td>
+                    <td className="px-6 py-4 text-gray-600">₱{f.price_per_liter != null ? Number(f.price_per_liter).toFixed(2) : "—"}</td>
+                    <td className="px-6 py-4 font-medium text-gray-900">₱{Number(f.cost).toLocaleString()}</td>
+                    <td className="px-6 py-4 text-gray-500">{f.odometer != null ? `${Number(f.odometer).toLocaleString()} km` : "—"}</td>
                     <td className="px-6 py-4 text-gray-500">{f.station || "—"}</td>
                   </tr>
                 ))}
@@ -300,9 +317,13 @@ export default function Maintenance() {
               className="w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm" />
           </div>
           <div>
-            <label className="text-xs text-gray-500">Cost (₱)</label>
-            <input required type="number" step="0.01" inputMode="decimal" autoComplete="off" value={fuelForm.cost} onChange={(e) => setFuelForm({ ...fuelForm, cost: e.target.value })}
-              className="w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm" />
+            <label className="text-xs text-gray-500">Price per Liter (₱)</label>
+            <input required type="number" step="0.01" inputMode="decimal" autoComplete="off" value={fuelForm.price_per_liter} onChange={(e) => setFuelForm({ ...fuelForm, price_per_liter: e.target.value })}
+              className="w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm" placeholder="e.g. 58.50" />
+          </div>
+          <div className="flex items-center justify-between p-3 bg-navy-50 rounded-lg text-sm">
+            <span className="text-gray-600">Auto-computed total</span>
+            <span className="font-semibold text-navy-800">₱{autoFuelCost}</span>
           </div>
           <div>
             <label className="text-xs text-gray-500">Odometer (optional)</label>

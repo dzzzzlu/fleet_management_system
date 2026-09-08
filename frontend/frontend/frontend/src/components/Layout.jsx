@@ -7,7 +7,6 @@ import {
   Phone,
   Wrench,
   TriangleAlert,
-  Fuel as FuelIcon,
   ClipboardList,
   Settings as SettingsIcon,
   Archive as ArchiveIcon,
@@ -28,7 +27,6 @@ const NAV = [
     { to: "/trips", label: "Trips", Icon: Phone },
     { to: "/maintenance", label: "Maintenance", Icon: Wrench, badgeKey: "pending_maintenance" },
     { to: "/incidents", label: "Incidents", Icon: TriangleAlert },
-    { to: "/fuel", label: "Fuel", Icon: FuelIcon },
   ]},
   { section: "INSIGHTS", items: [
     { to: "/reports", label: "Reports", Icon: ClipboardList },
@@ -51,7 +49,7 @@ const MOBILE_NAV = [
 
 const CRUMBS = {
   "/dashboard": "Dashboard", "/vehicles": "Vehicles", "/drivers": "Drivers",
-  "/trips": "Trips", "/maintenance": "Maintenance", "/incidents": "Incidents", "/fuel": "Fuel", "/reports": "Reports", "/settings": "Settings", "/archives": "Archives",
+  "/trips": "Trips", "/maintenance": "Maintenance", "/incidents": "Incidents", "/reports": "Reports", "/settings": "Settings", "/archives": "Archives",
 };
 
 function LogoMark({ size = "md" }) {

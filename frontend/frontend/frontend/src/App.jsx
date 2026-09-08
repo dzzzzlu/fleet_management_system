@@ -10,7 +10,6 @@ import Drivers from "./pages/Drivers";
 import Trips from "./pages/Trips";
 import Maintenance from "./pages/Maintenance";
 import Incidents from "./pages/Incidents";
-import Fuel from "./pages/Fuel";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Archives from "./pages/Archives";
@@ -37,7 +36,6 @@ export default function App() {
             <Route path="/trips" element={<Trips />} />
             <Route path="/maintenance" element={<Maintenance />} />
             <Route path="/incidents" element={<Incidents />} />
-            <Route path="/fuel" element={<Fuel />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/archives" element={<Archives />} />
