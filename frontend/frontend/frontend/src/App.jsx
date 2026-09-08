@@ -2,8 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import Layout from "./components/Layout";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+import AuthPage from "./pages/AuthPage";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Vehicles from "./pages/Vehicles";
@@ -29,8 +28,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomeGate />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/signup" element={<AuthPage />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/vehicles" element={<Vehicles />} />
