@@ -334,7 +334,7 @@ export default function Settings() {
                     <p className="text-sm font-medium text-gray-900 truncate">{u.full_name}</p>
                     <p className="text-xs text-gray-500 truncate">{u.email}</p>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize shrink-0 ${u.role === "administrator" ? "bg-navy-100 text-navy-800" : u.role === "driver" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize shrink-0 ${u.role === "administrator" ? "bg-navy-100 text-navy-800" : u.role === "driver" ? "bg-brand-100 text-brand-700" : "bg-gray-100 text-gray-600"}`}>
                     {u.role}
                   </span>
                 </li>

@@ -162,7 +162,7 @@ export default function Vehicles() {
         <StatCard icon={Truck} iconBg="bg-navy-100" iconColor="text-navy-700" value={counts.total} label="Total Vehicles" />
         <StatCard icon={Car} iconBg="bg-green-100" iconColor="text-green-700" value={counts.available} label="Available Vehicles" />
         <StatCard icon={Route} iconBg="bg-purple-100" iconColor="text-purple-700" value={counts.assigned} label="Assigned Vehicles" />
-        <StatCard icon={Wrench} iconBg="bg-amber-100" iconColor="text-amber-700" value={counts.maintenance} label="Maintenance Vehicles" />
+        <StatCard icon={Wrench} iconBg="bg-brand-100" iconColor="text-brand-700" value={counts.maintenance} label="Maintenance Vehicles" />
       </div>
 
       <div className="flex flex-col md:flex-row gap-3 mb-4">

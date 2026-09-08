@@ -130,7 +130,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
             <StatCard icon={Truck} iconBg="bg-navy-100" iconColor="text-navy-700" value={data.total_vehicles} label="Total Vehicles" />
             <StatCard icon={Car} iconBg="bg-green-100" iconColor="text-green-700" value={data.active_vehicles} label="Active Vehicles" />
-            <StatCard icon={Wrench} iconBg="bg-amber-100" iconColor="text-amber-700" value={data.vehicles_in_maintenance} label="Vehicles in Maintenance" />
+            <StatCard icon={Wrench} iconBg="bg-brand-100" iconColor="text-brand-700" value={data.vehicles_in_maintenance} label="Vehicles in Maintenance" />
             <StatCard icon={Users} iconBg="bg-purple-100" iconColor="text-purple-700" value={data.active_drivers} label="Active Drivers" />
             <StatCard icon={Phone} iconBg="bg-navy-100" iconColor="text-navy-700" value={data.active_trips} label="Active Trips" />
           </div>

@@ -178,7 +178,7 @@ export default function Maintenance() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <StatCard icon={Wrench} iconBg="bg-amber-100" iconColor="text-amber-700" value={records.filter((r) => r.maintenance_status === "pending").length} label="Pending Maintenance" />
+            <StatCard icon={Wrench} iconBg="bg-brand-100" iconColor="text-brand-700" value={records.filter((r) => r.maintenance_status === "pending").length} label="Pending Maintenance" />
             <StatCard icon={CarFront} iconBg="bg-green-100" iconColor="text-green-700" value={records.filter((r) => r.maintenance_status === "completed").length} label="Completed Maintenance" />
             <StatCard icon={Clock3} iconBg="bg-gray-100" iconColor="text-gray-600" value={`${avgDowntime} days`} label="Average Downtime" />
           </div>

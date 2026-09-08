@@ -8,7 +8,7 @@ import api from "../api/client";
 const JOINABLE_ROLES = ["staff", "manager", "driver", "viewer"];
 
 const inputCls =
-  "w-full bg-white/5 border border-white/15 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/25 transition";
+  "w-full bg-white/5 border border-white/15 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25 transition";
 const labelCls = "block text-xs font-medium text-white/70 mb-1.5";
 
 function Field({ label, icon: Icon, className = "", ...props }) {
@@ -140,8 +140,8 @@ export default function AuthPage() {
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-navy-950 text-white py-10 px-4">
       {/* background flourish */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute -top-40 -left-40 w-[480px] h-[480px] rounded-full bg-amber-400/10 blur-3xl" />
-        <div className="absolute -bottom-48 -right-40 w-[520px] h-[520px] rounded-full bg-amber-400/8 blur-3xl" />
+        <div className="absolute -top-40 -left-40 w-[480px] h-[480px] rounded-full bg-brand-500/10 blur-3xl" />
+        <div className="absolute -bottom-48 -right-40 w-[520px] h-[520px] rounded-full bg-brand-500/8 blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04),transparent_60%)]" />
       </div>
 
@@ -149,7 +149,7 @@ export default function AuthPage() {
         {/* brand */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-11 h-11 rounded-xl bg-amber-400 flex items-center justify-center shadow-lg shadow-amber-400/20">
+            <div className="w-11 h-11 rounded-xl bg-brand-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
               <Truck size={24} strokeWidth={2.2} className="text-navy-950" aria-hidden />
             </div>
             <span className="font-bold text-xl tracking-tight">DazAutoTrack</span>
@@ -163,7 +163,7 @@ export default function AuthPage() {
             <button
               onClick={() => switchTab("/login")}
               className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
-                isLoginTab ? "bg-amber-400 text-navy-950 shadow" : "text-white/70 hover:text-white"
+                isLoginTab ? "bg-brand-500 text-navy-950 shadow" : "text-white/70 hover:text-white"
               }`}
             >
               <LogIn size={16} aria-hidden /> Sign In
@@ -171,7 +171,7 @@ export default function AuthPage() {
             <button
               onClick={() => switchTab("/signup")}
               className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
-                !isLoginTab ? "bg-amber-400 text-navy-950 shadow" : "text-white/70 hover:text-white"
+                !isLoginTab ? "bg-brand-500 text-navy-950 shadow" : "text-white/70 hover:text-white"
               }`}
             >
               <UserPlus size={16} aria-hidden /> Sign Up
@@ -193,14 +193,14 @@ export default function AuthPage() {
                 <Field label="Password" icon={Lock} type="password" required value={password}
                   onChange={(e) => setPassword(e.target.value)} placeholder="Your password" autoComplete="current-password" />
                 <button disabled={loginBusy}
-                  className="w-full flex items-center justify-center gap-2 bg-amber-400 text-navy-950 rounded-lg py-3 text-sm font-bold disabled:opacity-50 hover:bg-amber-300 transition-colors shadow-lg shadow-amber-400/20">
+                  className="w-full flex items-center justify-center gap-2 bg-brand-500 text-navy-950 rounded-lg py-3 text-sm font-bold disabled:opacity-50 hover:bg-brand-400 transition-colors shadow-lg shadow-brand-500/20">
                   {loginBusy ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} aria-hidden />}
                   {loginBusy ? "Signing in..." : "Sign In"}
                 </button>
               </form>
               <p className="text-center text-sm text-white/40 mt-6">
                 New to DazAutoTrack?{" "}
-                <button onClick={() => switchTab("/signup")} className="text-amber-300 font-medium hover:text-amber-200">
+                <button onClick={() => switchTab("/signup")} className="text-brand-400 font-medium hover:text-brand-300">
                   Create an account
                 </button>
               </p>
@@ -219,7 +219,7 @@ export default function AuthPage() {
                 <div className="bg-white/5 rounded-xl p-4 text-left">
                   <p className="text-xs text-white/50 mb-1.5">Your Organization ID (share with team members)</p>
                   <div className="flex items-center gap-2">
-                    <p className="flex-1 text-sm font-mono text-amber-300 break-all">{success.organization_id}</p>
+                    <p className="flex-1 text-sm font-mono text-brand-400 break-all">{success.organization_id}</p>
                     <button onClick={copyOrgId} className="shrink-0 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="Copy">
                       {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} className="text-white/70" />}
                     </button>
@@ -227,7 +227,7 @@ export default function AuthPage() {
                 </div>
               )}
               <button onClick={goBackToSignIn}
-                className="w-full flex items-center justify-center gap-2 bg-amber-400 text-navy-950 rounded-lg py-3 text-sm font-bold hover:bg-amber-300 transition-colors">
+                className="w-full flex items-center justify-center gap-2 bg-brand-500 text-navy-950 rounded-lg py-3 text-sm font-bold hover:bg-brand-400 transition-colors">
                 <LogIn size={16} aria-hidden /> Back to Sign In
               </button>
             </div>
@@ -243,11 +243,11 @@ export default function AuthPage() {
               {/* create/join mode */}
               <div className="flex p-1 rounded-lg bg-white/5 border border-white/10">
                 <button type="button" onClick={() => setMode("create")}
-                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${mode === "create" ? "bg-amber-400 text-navy-950" : "text-white/70 hover:text-white"}`}>
+                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${mode === "create" ? "bg-brand-500 text-navy-950" : "text-white/70 hover:text-white"}`}>
                   <span className="flex items-center justify-center gap-1.5"><Building2 size={15} aria-hidden /> New Organization</span>
                 </button>
                 <button type="button" onClick={() => setMode("join")}
-                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${mode === "join" ? "bg-amber-400 text-navy-950" : "text-white/70 hover:text-white"}`}>
+                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${mode === "join" ? "bg-brand-500 text-navy-950" : "text-white/70 hover:text-white"}`}>
                   <span className="flex items-center justify-center gap-1.5"><User size={15} aria-hidden /> Join Existing</span>
                 </button>
               </div>
@@ -269,7 +269,7 @@ export default function AuthPage() {
                     onChange={(e) => update("password", e.target.value)} placeholder="Create a password" autoComplete="new-password" />
                   <label className="flex items-start gap-2 text-sm text-white/70 cursor-pointer">
                     <input type="checkbox" required checked={form.agree_terms}
-                      onChange={(e) => update("agree_terms", e.target.checked)} className="mt-0.5 accent-amber-400" />
+                      onChange={(e) => update("agree_terms", e.target.checked)} className="mt-0.5 accent-brand-500" />
                     <span>I agree to the Terms of Service and confirm I am authorized to register this organization.</span>
                   </label>
                 </>
@@ -308,7 +308,7 @@ export default function AuthPage() {
               )}
 
               <button disabled={signupBusy}
-                className="w-full flex items-center justify-center gap-2 bg-amber-400 text-navy-950 rounded-lg py-3 text-sm font-bold disabled:opacity-50 hover:bg-amber-300 transition-colors shadow-lg shadow-amber-400/20">
+                className="w-full flex items-center justify-center gap-2 bg-brand-500 text-navy-950 rounded-lg py-3 text-sm font-bold disabled:opacity-50 hover:bg-brand-400 transition-colors shadow-lg shadow-brand-500/20">
                 {signupBusy ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} aria-hidden />}
                 {signupBusy ? "Creating account..." : "Sign Up"}
               </button>

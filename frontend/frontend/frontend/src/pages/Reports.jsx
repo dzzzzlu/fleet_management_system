@@ -173,7 +173,7 @@ export default function Reports() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 my-6">
         <StatCard icon={TrendingUp} iconBg="bg-navy-100" iconColor="text-navy-700" value={kpis.activeFleet} label="Active Vehicles" />
         <StatCard icon={Phone} iconBg="bg-blue-100" iconColor="text-blue-700" value={kpis.totalTrips} label="Total Trips" />
-        <StatCard icon={Wrench} iconBg="bg-amber-100" iconColor="text-amber-700" value={kpis.maintenance} label="In Maintenance" />
+        <StatCard icon={Wrench} iconBg="bg-brand-100" iconColor="text-brand-700" value={kpis.maintenance} label="In Maintenance" />
         <StatCard icon={FuelIcon} iconBg="bg-purple-100" iconColor="text-purple-700" value={`₱${kpis.totalFuel.toLocaleString()}`} label="Total Fuel Spend" />
       </div>
 

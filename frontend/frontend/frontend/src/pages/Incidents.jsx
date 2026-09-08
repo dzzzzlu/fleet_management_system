@@ -87,7 +87,7 @@ export default function Incidents() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <StatCard icon={TriangleAlert} iconBg="bg-red-100" iconColor="text-red-700" value={records.filter((r) => r.incident_status === "reported").length} label="Reported Incidents" />
-        <StatCard icon={SearchCheck} iconBg="bg-amber-100" iconColor="text-amber-700" value={records.filter((r) => r.incident_status === "under_review").length} label="Under Review" />
+        <StatCard icon={SearchCheck} iconBg="bg-brand-100" iconColor="text-brand-700" value={records.filter((r) => r.incident_status === "under_review").length} label="Under Review" />
         <StatCard icon={CircleCheck} iconBg="bg-green-100" iconColor="text-green-700" value={records.filter((r) => r.incident_status === "resolved").length} label="Resolved" />
       </div>
 

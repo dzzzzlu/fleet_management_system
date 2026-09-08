@@ -87,7 +87,7 @@ export default function Fuel() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <StatCard icon={Wallet} iconBg="bg-navy-100" iconColor="text-navy-700" value={`₱${stats.totalCost}`} label="Total Fuel Cost" />
         <StatCard icon={Droplets} iconBg="bg-purple-100" iconColor="text-purple-700" value={`${stats.totalLiters} L`} label="Total Liters" />
-        <StatCard icon={GaugeCircle} iconBg="bg-amber-100" iconColor="text-amber-700" value={`₱${stats.avgPrice}`} label="Avg Price / Liter" />
+        <StatCard icon={GaugeCircle} iconBg="bg-brand-100" iconColor="text-brand-700" value={`₱${stats.avgPrice}`} label="Avg Price / Liter" />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-x-auto">

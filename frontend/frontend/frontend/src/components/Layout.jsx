@@ -121,7 +121,7 @@ export default function Layout() {
   }
 
   const CATEGORY_DOT = {
-    maintenance: "bg-amber-500",
+    maintenance: "bg-brand-500",
     incident: "bg-red-500",
     trip: "bg-blue-500",
     compliance: "bg-purple-500",
