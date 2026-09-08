@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.local_stub import User, Organization
+from app.models.driver import Driver
 from app.schemas.auth import (
     SignupRequest, LoginRequest, TokenResponse, UserOut, SignupSuccessResponse,
     AdminCreateUserRequest,
@@ -17,6 +18,45 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 def _require_admin(current_user: User) -> None:
     if current_user.role != "administrator":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Administrator role required")
+
+
+def _ensure_driver_record(db: Session, org_id: uuid.UUID, user: User) -> Driver | None:
+    """
+    Every role='driver' account must have a matching fleet_drivers record so the
+    driver appears in the Drivers list/dashboard. Works the same whether the
+    account was created by an admin or via self signup.
+    """
+    if user.role != "driver":
+        return None
+    if (
+        db.query(Driver)
+        .filter(Driver.organization_id == org_id, Driver.user_id == user.id)
+        .first()
+    ):
+        return None
+    n = db.query(Driver).filter(Driver.organization_id == org_id).count()
+    while True:
+        n += 1
+        employee_number = f"DRV-ORG-{n:04d}"
+        if (
+            db.query(Driver)
+            .filter(Driver.organization_id == org_id, Driver.employee_number == employee_number)
+            .first()
+        ) is None:
+            break
+    driver = Driver(
+        organization_id=org_id,
+        user_id=user.id,
+        employee_number=employee_number,
+        full_name=user.full_name,
+        license_number=f"PEND-{uuid.uuid4().hex[:8].upper()}",
+        phone=user.phone,
+        status="active",
+        created_by=user.id,
+        updated_by=user.id,
+    )
+    db.add(driver)
+    return driver
 
 
 @router.get("/users", response_model=list[UserOut])
@@ -60,6 +100,8 @@ def create_user(
         is_active=True,
     )
     db.add(user)
+    db.flush()  # assign user.id so the driver record can reference it
+    _ensure_driver_record(db, current_user.organization_id, user)
     db.commit()
     db.refresh(user)
     return user
@@ -102,6 +144,8 @@ def signup(body: SignupRequest, db: Session = Depends(get_db)):
         is_active=True,
     )
     db.add(user)
+    db.flush()  # assign user.id so the driver record can reference it
+    _ensure_driver_record(db, org.id, user)
     db.commit()
     db.refresh(user)
 

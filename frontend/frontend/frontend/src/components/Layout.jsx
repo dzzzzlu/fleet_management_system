@@ -7,6 +7,7 @@ import {
   Phone,
   Wrench,
   TriangleAlert,
+  Fuel as FuelIcon,
   ClipboardList,
   Settings as SettingsIcon,
   Archive as ArchiveIcon,
@@ -21,12 +22,13 @@ const ICON_PROPS = { size: 18, strokeWidth: 2, "aria-hidden": true };
 
 const NAV = [
   { section: "FLEET MANAGEMENT", items: [
-    { to: "/", label: "Dashboard", Icon: LayoutDashboard, end: true },
+    { to: "/dashboard", label: "Dashboard", Icon: LayoutDashboard, end: true },
     { to: "/vehicles", label: "Vehicles", Icon: Truck, badgeKey: "total_vehicles" },
     { to: "/drivers", label: "Drivers", Icon: Users, badgeKey: "active_drivers" },
     { to: "/trips", label: "Trips", Icon: Phone },
     { to: "/maintenance", label: "Maintenance", Icon: Wrench, badgeKey: "pending_maintenance" },
     { to: "/incidents", label: "Incidents", Icon: TriangleAlert },
+    { to: "/fuel", label: "Fuel", Icon: FuelIcon },
   ]},
   { section: "INSIGHTS", items: [
     { to: "/reports", label: "Reports", Icon: ClipboardList },
@@ -40,7 +42,7 @@ const NAV = [
 ];
 
 const MOBILE_NAV = [
-  { to: "/", label: "Home", Icon: LayoutDashboard, end: true },
+  { to: "/dashboard", label: "Home", Icon: LayoutDashboard, end: true },
   { to: "/trips", label: "Trips", Icon: Phone },
   { to: "/maintenance", label: "Maint.", Icon: Wrench },
   { to: "/incidents", label: "Incidents", Icon: TriangleAlert },
@@ -48,8 +50,8 @@ const MOBILE_NAV = [
 ];
 
 const CRUMBS = {
-  "/": "Dashboard", "/vehicles": "Vehicles", "/drivers": "Drivers",
-  "/trips": "Trips", "/maintenance": "Maintenance", "/incidents": "Incidents", "/reports": "Reports", "/settings": "Settings", "/archives": "Archives",
+  "/dashboard": "Dashboard", "/vehicles": "Vehicles", "/drivers": "Drivers",
+  "/trips": "Trips", "/maintenance": "Maintenance", "/incidents": "Incidents", "/fuel": "Fuel", "/reports": "Reports", "/settings": "Settings", "/archives": "Archives",
 };
 
 function LogoMark({ size = "md" }) {

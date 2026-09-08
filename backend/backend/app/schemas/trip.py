@@ -30,3 +30,6 @@ class TripOut(BaseModel):
     departure_time: datetime
     arrival_time: datetime | None
     trip_status: str
+    odometer_start: Decimal | None = None
+    odometer_end: Decimal | None = None
+    distance_km: Decimal | None = None

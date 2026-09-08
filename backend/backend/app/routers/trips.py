@@ -14,6 +14,14 @@ from app.schemas.trip import TripCreate, TripStatusUpdate, TripOut
 router = APIRouter(prefix="/api/trips", tags=["trips"])
 
 
+def _with_distance(trip: Trip) -> Trip:
+    if trip.odometer_start is not None and trip.odometer_end is not None:
+        trip.distance_km = trip.odometer_end - trip.odometer_start
+    else:
+        trip.distance_km = None
+    return trip
+
+
 @router.get("", response_model=list[TripOut])
 def list_trips(
     trip_status: str | None = None,
@@ -30,7 +38,8 @@ def list_trips(
         if driver is None:
             return []
         q = q.filter(Trip.driver_id == driver.id)
-    return q.order_by(Trip.departure_time.desc()).all()
+    rows = q.order_by(Trip.departure_time.desc()).all()
+    return [_with_distance(t) for t in rows]
 
 
 @router.post("", response_model=TripOut, status_code=201)
@@ -124,7 +133,7 @@ def log_trip(
         raise HTTPException(500, "Trip could not be created; no changes were saved")
 
     db.refresh(trip)
-    return trip
+    return _with_distance(trip)
 
 
 @router.patch("/{trip_id}/status", response_model=TripOut)
@@ -174,4 +183,4 @@ def update_trip_status(
 
     db.commit()
     db.refresh(trip)
-    return trip
+    return _with_distance(trip)

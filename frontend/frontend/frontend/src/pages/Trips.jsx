@@ -20,7 +20,7 @@ export default function Trips() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("active");
-  const [form, setForm] = useState({ vehicle_id: "", driver_id: "", trip_number: "", destination: "", departure_time: "" });
+  const [form, setForm] = useState({ vehicle_id: "", driver_id: "", trip_number: "", destination: "", departure_time: "", odometer_start: "" });
   const { error: loadError, debug: loadDebug, handleError: handleLoadError } = useErrorHandler();
   const { user } = useAuth();
   const canCreate = can(user?.role, "tripCreate");
@@ -46,8 +46,13 @@ export default function Trips() {
     e.preventDefault();
     setError("");
     try {
-      await api.post("/trips", { ...form, departure_time: new Date(form.departure_time).toISOString() });
+      await api.post("/trips", {
+        ...form,
+        departure_time: new Date(form.departure_time).toISOString(),
+        odometer_start: form.odometer_start ? Number(form.odometer_start) : undefined,
+      });
       setModalOpen(false);
+      setForm({ ...{ vehicle_id: "", driver_id: "", trip_number: "", destination: "", departure_time: "", odometer_start: "" } });
       load();
     } catch (err) {
       setError(err.response?.data?.detail || "Could not log trip");
@@ -57,6 +62,15 @@ export default function Trips() {
   const setStatus = async (id, trip_status) => {
     try { await api.patch(`/trips/${id}/status`, { trip_status }); load(); }
     catch (err) { handleLoadError(err, "Failed to update trip status"); }
+  };
+
+  const completeTrip = async (t) => {
+    const val = window.prompt(`Enter ending odometer (km) for trip ${t.trip_number}${t.odometer_start ? ` · started at ${t.odometer_start}` : ""}:`);
+    if (val === null) return;
+    const end = Number(val);
+    if (!Number.isFinite(end)) { handleLoadError({ message: "Odometer must be a number" }, "Could not complete trip"); return; }
+    try { await api.patch(`/trips/${t.id}/status`, { trip_status: "completed", odometer_end: end }); load(); }
+    catch (err) { handleLoadError(err, "Failed to complete trip"); }
   };
 
   const tabFiltered = trips.filter((t) => {
@@ -153,13 +167,14 @@ export default function Trips() {
               <th className="px-6 py-3">Driver</th>
               <th className="px-6 py-3">Vehicle</th>
               <th className="px-6 py-3">Destination</th>
+              <th className="px-6 py-3">Odometer (km)</th>
               <th className="px-6 py-3">Status</th>
               {canUpdate && <th className="px-6 py-3"></th>}
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={6} className="text-center py-16 text-gray-400">No trips found.</td></tr>
+              <tr><td colSpan={7} className="text-center py-16 text-gray-400">No trips found.</td></tr>
             )}
             {filtered.map((t) => (
               <tr key={t.id} className="border-t border-gray-100">
@@ -167,6 +182,15 @@ export default function Trips() {
                 <td className="px-6 py-4 text-gray-600">{driverName(t.driver_id)}</td>
                 <td className="px-6 py-4 text-gray-600">{vehicleName(t.vehicle_id)}</td>
                 <td className="px-6 py-4 text-gray-600">{t.destination}</td>
+                <td className="px-6 py-4 text-gray-500">
+                  {t.odometer_start != null || t.odometer_end != null ? (
+                    <span>
+                      {t.odometer_start != null ? `${Number(t.odometer_start).toLocaleString()} → ` : "— → "}
+                      {t.odometer_end != null ? Number(t.odometer_end).toLocaleString() : "…"}
+                      {t.distance_km != null && <span className="text-navy-700 font-medium ml-1">({Number(t.distance_km).toLocaleString()} km)</span>}
+                    </span>
+                  ) : "—"}
+                </td>
                 <td className="px-6 py-4"><StatusBadge status={t.trip_status} /></td>
                 {canUpdate && (
                   <td className="px-6 py-4 text-right space-x-3">
@@ -174,7 +198,7 @@ export default function Trips() {
                       <button onClick={() => setStatus(t.id, "active")} className="text-navy-700 text-xs font-semibold hover:text-navy-900">Start</button>
                     )}
                     {t.trip_status === "active" && (
-                      <button onClick={() => setStatus(t.id, "completed")} className="text-green-600 text-xs font-medium">Complete</button>
+                      <button onClick={() => completeTrip(t)} className="text-green-600 text-xs font-medium">Complete</button>
                     )}
                   </td>
                 )}
@@ -218,6 +242,12 @@ export default function Trips() {
               <label className="text-xs text-gray-500">Departure Time</label>
               <input required type="datetime-local" value={form.departure_time} onChange={(e) => setForm({ ...form, departure_time: e.target.value })}
                 className="w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Odometer Start (km)</label>
+              <input type="number" min="0" step="0.1" value={form.odometer_start} onChange={(e) => setForm({ ...form, odometer_start: e.target.value })}
+                className="w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm" placeholder="e.g. 45210" />
+              <p className="text-[11px] text-gray-400 mt-1">Enter the starting odometer — the distance will auto-calculate when the trip is completed.</p>
             </div>
           </div>
           <button type="submit" className="w-full mt-5 bg-navy-600 text-white font-medium py-3 rounded-lg hover:bg-navy-700 transition-colors">

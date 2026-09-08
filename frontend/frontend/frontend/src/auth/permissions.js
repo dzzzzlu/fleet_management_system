@@ -5,11 +5,11 @@
 
 // Page-level route access (which routes each role may open).
 export const ROLE_ROUTES = {
-  viewer: ["/", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/reports"],
-  staff: ["/", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/reports"],
-  manager: ["/", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/reports", "/archives"],
-  administrator: ["/", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/reports", "/settings", "/archives"],
-  driver: ["/", "/trips", "/maintenance", "/incidents", "/reports"],
+  viewer: ["/dashboard", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/fuel", "/reports"],
+  staff: ["/dashboard", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/fuel", "/reports"],
+  manager: ["/dashboard", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/fuel", "/reports", "/archives"],
+  administrator: ["/dashboard", "/vehicles", "/drivers", "/trips", "/maintenance", "/incidents", "/fuel", "/reports", "/settings", "/archives"],
+  driver: ["/dashboard", "/trips", "/maintenance", "/incidents", "/fuel", "/reports"],
 };
 
 // Per-action permission matrix (same actions as backend ROLE_PERMISSIONS).

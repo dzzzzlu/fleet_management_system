@@ -25,7 +25,7 @@ export default function Login() {
       setBusy(false);
       return;
     }
-    navigate("/");
+    navigate("/dashboard");
   }
 
   return (
