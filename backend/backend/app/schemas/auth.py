@@ -96,6 +96,7 @@ class UserOut(BaseModel):
     role: str
     is_active: bool
     created_at: datetime
+    organization_name: str | None = None
 
 
 class TokenResponse(BaseModel):

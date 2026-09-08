@@ -173,9 +173,13 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Account is deactivated")
 
     token = create_access_token(user.id, user.organization_id, user.role)
+    org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+    user.organization_name = org.name if org else None
     return TokenResponse(access_token=token, user=UserOut.model_validate(user))
 
 
 @router.get("/me", response_model=UserOut)
-def me(current_user: User = Depends(get_current_user)):
+def me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    org = db.query(Organization).filter(Organization.id == current_user.organization_id).first()
+    current_user.organization_name = org.name if org else None
     return current_user
