@@ -152,7 +152,7 @@ export default function AuthPage() {
             <div className="w-11 h-11 rounded-xl bg-brand-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
               <Truck size={24} strokeWidth={2.2} className="text-navy-950" aria-hidden />
             </div>
-            <span className="font-bold text-xl tracking-tight">DazAutoTrack</span>
+            <span className="font-bold text-xl tracking-tight">Fleet Management System</span>
           </div>
           <p className="text-sm text-white/60 mt-2">Fleet operations, simplified.</p>
         </div>
@@ -199,7 +199,7 @@ export default function AuthPage() {
                 </button>
               </form>
               <p className="text-center text-sm text-white/40 mt-6">
-                New to DazAutoTrack?{" "}
+                New to Fleet Management System?{" "}
                 <button onClick={() => switchTab("/signup")} className="text-brand-400 font-medium hover:text-brand-300">
                   Create an account
                 </button>

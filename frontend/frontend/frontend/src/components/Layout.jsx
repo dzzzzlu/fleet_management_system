@@ -145,7 +145,7 @@ export default function Layout() {
       <aside className="hidden md:flex w-64 bg-navy text-white flex-col">
         <div className="p-4 flex items-center gap-2.5 border-b border-white/10">
           <LogoMark />
-          <span className="font-semibold text-sm">DazAutoTrack</span>
+          <span className="font-semibold text-sm">Fleet Management System</span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
           {visibleNav.map((group) => (

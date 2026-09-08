@@ -30,7 +30,7 @@ export default function Landing() {
             <div className="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center">
               <Truck size={20} strokeWidth={2.2} className="text-navy-950" aria-hidden />
             </div>
-            <span className="font-bold text-lg tracking-tight">DazAutoTrack</span>
+            <span className="font-bold text-lg tracking-tight">Fleet Management System</span>
           </div>
           <div className="flex items-center gap-3">
             {user ? (
@@ -155,7 +155,7 @@ export default function Landing() {
             <div className="w-7 h-7 rounded-lg bg-brand-500 flex items-center justify-center">
               <Truck size={16} strokeWidth={2.2} className="text-navy-950" aria-hidden />
             </div>
-            DazAutoTrack · Argo v0.5
+            Fleet Management System · Argo v0.5
           </div>
           <div className="flex items-center gap-6">
             <Link to="/login" className="hover:text-white transition-colors">Login</Link>
